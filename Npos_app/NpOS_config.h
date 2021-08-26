@@ -26,6 +26,6 @@
 #define TASK_PRIORITY_TYPE  uint8_t
 
 //任务堆栈使用的数据类型
-#define TASK_STACK_TYPE  uint8_t
+#define TASK_STACK_TYPE  __attribute__ ((aligned (8))) uint8_t
 
 #endif // !NPOS_CONFIG_H
