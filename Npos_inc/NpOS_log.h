@@ -3,6 +3,7 @@
 
 #include "stdio.h"
 #include "../Npos_cpu/systick.h"
+#if NPOS_logInfoPrintf_EN
 #define NONE                  "\e[0m"           //清除颜色，即之后的打印为正常输出，之前的不受影响
 #define BLACK                 "\e[0;30m"         //深黑
 #define L_BLACK             "\e[1;30m"            //亮黑，偏灰褐
@@ -30,11 +31,18 @@
 
 #define _TIME_  NPOS_SchedulingInterval_MS*get_sys_ticks()
 
-
 #define LOG_ERR(who,content)    printf("[%ld]  [%s]["RED "ERROR"NONE"]: %s. \n",_TIME_,who,content)
 #define LOG_OK(who,content)    printf("[%ld]  [%s]["GREEN "OK"NONE"]: %s. \n",_TIME_,who,content)
 #define LOG_WARING(who,content)    printf("[%ld]  [%s]["BROWN "WARING"NONE"]: %s. \n",_TIME_,who,content)
 #define LOG_INFO(who,content)    printf("[%ld]  [%s]["NONE "INFO"NONE"]: %s. \n",_TIME_,who,content)
+#else
+#define LOG_ERR(who,content)   
+#define LOG_OK(who,content)   
+#define LOG_WARING(who,content)   
+#define LOG_INFO(who,content)  
+#endif
+
+
 
 #endif // !LOG_H
 

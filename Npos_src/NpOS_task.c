@@ -1,5 +1,4 @@
 #include "../Npos_inc/NpOS.h"
-// #include "NpOS_task.h"
 #include "../Npos_cpu/systick.h"
 #include "string.h"
 #include "stdio.h"
@@ -10,10 +9,35 @@ Np_TCB* lp_circleTcb;
 Np_TCB l_pendListRootNode;
 
 //空闲任务相关
-#define idleTask_StackSize  516
+#define idleTask_StackSize  512
 TASK_STACK_TYPE idleTask_Stack[idleTask_StackSize];
 Np_TCB idleTask_Tcb;
 void idleTask(void);
+
+/*****函数声明******/
+void npos_task_lpendListInit();
+void npos_task_gTcbListInit();
+void npos_sp_init(
+                Np_TCB* tcb,
+                void* stackbut,
+                uint32_t stacksize
+                );
+void npos_idletaskinit();
+task_funcsta npos_task_insertIntoTaskList(
+                        Np_TCB* _tcb,
+                        TASK_PRIORITY_TYPE _taskpri
+                        );
+void NpOS_task_startSchedul();
+
+void npos_task_setTaskReadyFlag(Np_TCB* tcb);
+void npos_task_clearTaskReadyFlag(Np_TCB* tcb);
+
+task_funcsta npos_insertIntoPendList();
+Np_TCB* npos_deleteFromPendList(Np_TCB* tcbnode);
+void npos_taskpendTick_dec();
+void npos_get_highest_priority();
+/******************/
+
 
 //进入临界区
 #define NpOS_ENTER_CRITICAL()       eclic_global_interrupt_disable()
@@ -23,7 +47,6 @@ void idleTask(void);
 
 
 const uint8_t c_taskPrioMask2Prio[256] = {
-    // 7,7,6,6,5,5,5,5,4,4,4,4,4,4,4,4,
     0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,
     4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
     5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
@@ -43,6 +66,161 @@ const uint8_t c_taskPrioMask2Prio[256] = {
 
 };
 
+
+/**
+    \brief  tcb list的初始化,并创建一个idle任务
+    \param[in]  none
+    \retval none
+*/
+void NpOS_task_tcblistInit(){
+
+    npos_task_gTcbListInit();
+    npos_task_lpendListInit();
+    npos_idletaskinit();
+}
+
+/**
+    \brief  create a task
+    \param[in]  Np_TCB* tcb  任务所属的任务控制块的指针
+    \param[in]  p_taskFunction taskfunc 任务的函数入口指针
+    \param[in]  TASK_PRIORITY_TYPE taskpri  任务的优先级
+    \param[in]  void* stackbut  任务的堆栈的栈底指针（即申请的数组的头指针）
+    \param[in]  uint32_t stacksize  任务的堆栈大小（单位 Byte）
+    \param[in]  task_status taskstatus 任务创建完后的初始状态
+    \retval none
+*/
+task_funcsta NpOS_task_createTask(
+                        Np_TCB* tcb,
+                        p_taskFunction taskfunc,
+                        TASK_PRIORITY_TYPE taskpri,
+                        void* stackbut,
+                        uint32_t stacksize,
+                        task_status taskstatus
+                        )
+{
+    if(stacksize < NPOS_TASK_MIN_STACKSIZE)
+    {
+        LOG_ERR("system","The alloced stack is too small.");
+        return Exc_ERROR;
+    }
+    tcb->pv_taskStack = (uint32_t)stackbut;
+
+    tcb->taskStackSize = stacksize;
+
+    tcb->taskStatus = taskstatus;
+
+    tcb->p_taskFunction = taskfunc;
+    
+    tcb->p_nextTcb = NULL;
+
+    if(taskstatus == TASK_READY)
+    {
+        tcb->taskPriority = taskpri;
+
+        npos_task_setTaskReadyFlag(tcb);
+    }
+    else
+    {
+        tcb->taskPriority = taskpri;
+    }
+    
+    npos_sp_init(tcb,stackbut,stacksize);
+
+    if(!npos_task_insertIntoTaskList(tcb,taskpri))
+        return Exc_ERROR;
+
+    LOG_OK("system","task create successfully");
+    return Exc_OK;
+
+}
+
+/**
+    \brief  主动开始一次任务调度
+            用以当前任务主动放弃cpu的使用权
+    \param[in]  none
+    \retval none
+*/
+void NpOS_task_startSchedul(){
+    TIMER_WRITE_REG(TIMER_MSIP) = 1;
+}
+
+/**
+    \brief  os延时函数 用以将当前任务挂起Ticks个时间
+    \param[in]  uint32_t ticks  任务需要等待的tick数 每个ticks的持续时间由Npos_config.h中的 NPOS_SchedulingInterval_MS 决定
+    \retval none
+*/
+void NpOS_task_pendDelayTicks(uint32_t ticks){
+
+    NpOS_ENTER_CRITICAL();
+
+    gp_currentTcb->taskDelayTick = ticks;
+    gp_currentTcb->taskStatus = TASK_PEND;
+
+    npos_task_clearTaskReadyFlag(gp_currentTcb);
+
+    npos_insertIntoPendList();
+
+    NpOS_EXIT_CRITICAL();
+
+    NpOS_task_startSchedul();
+}
+
+/**
+    \brief  任务调度函数
+    \param[in]  none
+    \retval none
+*/
+void NpOS_task_schedul(){
+    
+    //获取下一个优先级最高的任务tcb
+    npos_get_highest_priority();
+
+    //恢复上下文
+    switch_to(gp_currentTcb);
+}
+
+/**
+    \brief  OS入口 
+                调用此函数后cpu的使用权与控制器正式交给os
+    \param[in]  none
+    \retval none
+*/
+void NpOS_Start(){
+    gp_currentTcb = g_TcbList.taskList[0].taskNode;
+    System_tickInit();
+    root_task_entry(gp_currentTcb);
+}
+
+
+/**
+    \brief  系统心跳中断服务函数
+    \param[in]  none
+    \retval none
+*/
+void eclic_mtip_handler(){
+
+    context_save();
+
+    g_npos_systime_Ticks += 1;
+    npos_taskpendTick_dec();
+    
+    NpOS_task_schedul();
+
+    TIMER_WRITE_REG(TIMER_MTIME) = 0x0;
+    // TIMER_WRITE_REG(TIMER_MTIME+4) = 0x0;
+
+}
+
+/**
+    \brief  msip中断服务函数
+    \param[in]  none
+    \retval none
+*/
+void eclic_msip_handler(){
+    context_save();
+    NpOS_task_schedul();
+    TIMER_WRITE_REG(TIMER_MSIP) = 0;
+}
 
 /**
     \brief  系统空闲任务 避免系统无事可做
@@ -92,32 +270,83 @@ void idleTask(){
 
 }
 
+/**
+    \brief  在readylist中设置当前任务的就绪标志
+    \param[in]  Np_TCB* tcb 要设置就绪标志的tcb
+    \retval none
+*/
+void npos_task_setTaskReadyFlag(Np_TCB* tcb){
+    g_TcbList.taskReadyList |= (0x1 << tcb->taskPriority);
+}
+
+/**
+    \brief  在readylist中清除当前任务的就绪标志
+    \param[in]  Np_TCB* tcb 要清除就绪标志的tcb
+    \retval none
+*/
+void npos_task_clearTaskReadyFlag(Np_TCB* tcb){
+    g_TcbList.taskReadyList &= ~( 0x1 << (tcb->taskPriority));
+}
+
+/**
+    \brief  pendlist的初始化
+    \param[in]  none
+    \retval none
+*/
+void npos_task_lpendListInit(){
+    l_pendListRootNode.p_nextTcb = NULL;
+    l_pendListRootNode.p_lastTcb = &l_pendListRootNode;
+}
+
+/**
+    \brief  tcblist初始化的核心步骤
+    \param[in]  none
+    \retval none
+*/
+void npos_task_gTcbListInit(){
+    // g_TcbList.taskList[0].taskNode = NULL;
+    for(int i = 0;i<NPOS_TASK_PRIORITY_NUMBER;i++){
+        g_TcbList.taskList[i].taskNode = NULL;
+    }
+    g_TcbList.taskPendList = &l_pendListRootNode;
+    g_TcbList.taskReadyList = 0;
+}
 
 /**
     \brief  空闲任务的创建
     \param[in]  none
     \retval none
 */
-void NpOS_idletaskinit(){
+void npos_idletaskinit(){
     NpOS_task_createTask(&idleTask_Tcb,idleTask,0,idleTask_Stack,idleTask_StackSize,TASK_READY);
 }
 
-/**
-    \brief  tcb list的初始化,并创建一个idle任务
-    \param[in]  none
-    \retval none
-*/
-void NpOS_task_tcblistInit(){
-    g_TcbList.taskList[0].taskNode = NULL;
-    g_TcbList.taskPendList = &l_pendListRootNode;
-    l_pendListRootNode.p_nextTcb = NULL;
-    l_pendListRootNode.p_lastTcb = &l_pendListRootNode;
-    // g_TcbList.taskPendList->p_nextTcb = NULL;
-    // g_TcbList.taskPendList->p_lastTcb = g_TcbList.taskPendList;
-    g_TcbList.taskReadyList = 0;
-    NpOS_idletaskinit();
-}
 
+/**
+    \brief  将任务插入任务列表中
+    \param[in]  Np_TCB* tcb 需要初始化的tcb的指针
+    \param[in]  TASK_PRIORITY_TYPE _taskpri 任务优先级
+    \retval task_funcsta 返回任务执行状态代码
+*/
+task_funcsta npos_task_insertIntoTaskList(
+                        Np_TCB* _tcb,
+                        TASK_PRIORITY_TYPE _taskpri
+                        ){
+
+    if(g_TcbList.taskList[0].taskNode == NULL){
+        g_TcbList.taskList[0].taskNode = _tcb;
+        _tcb->p_nextTcb = g_TcbList.taskList[0].taskNode;
+    }
+    else{
+        if(g_TcbList.taskList[_taskpri].taskNode!=NULL){
+            LOG_ERR("system","this priority has been used .");
+            return Exc_ERROR;
+        }
+        g_TcbList.taskList[_taskpri].taskNode = _tcb;
+        _tcb->p_nextTcb = NULL;
+    }
+    return Exc_OK;
+}
 
 /**
     \brief  任务堆栈的初始化
@@ -125,7 +354,14 @@ void NpOS_task_tcblistInit(){
     \param[in]  Np_TCB* tcb 需要初始化的tcb的指针
     \retval none
 */
-void npos_sp_init(Np_TCB* tcb){
+void npos_sp_init(
+                Np_TCB* tcb,
+                void* stackbut,
+                uint32_t stacksize
+                ){
+
+    memset(stackbut,0,sizeof(uint8_t)*stacksize);
+    tcb->pv_taskSp = (uint32_t)stackbut + stacksize;
 
     tcb->pv_taskSp -= 32*4;
 
@@ -144,80 +380,7 @@ void npos_sp_init(Np_TCB* tcb){
     
 }
 
-/**
-    \brief  create a task
-    \param[in]  Np_TCB* tcb  任务所属的任务控制块的指针
-    \param[in]  p_taskFunction taskfunc 任务的函数入口指针
-    \param[in]  TASK_PRIORITY_TYPE taskpri  任务的优先级
-    \param[in]  void* stackbut  任务的堆栈的栈底指针（即申请的数组的头指针）
-    \param[in]  uint32_t stacksize  任务的堆栈大小（单位 Byte）
-    \param[in]  task_status taskstatus 任务创建完后的初始状态
-    \retval none
-*/
-task_funcsta NpOS_task_createTask(
-                        Np_TCB* tcb,
-                        p_taskFunction taskfunc,
-                        TASK_PRIORITY_TYPE taskpri,
-                        void* stackbut,
-                        uint32_t stacksize,
-                        task_status taskstatus
-                        )
-{
-    if(stacksize < NPOS_TASK_MIN_STACKSIZE)
-    {
-        LOG_ERR("task","The alloced stack is too small.");
-        return Exc_ERROR;
-    }
-    tcb->pv_taskStack = (uint32_t)stackbut;
 
-    tcb->taskStackSize = stacksize;
-
-    tcb->taskStatus = taskstatus;
-
-    tcb->p_taskFunction = taskfunc;
-
-    if(taskstatus == TASK_READY)
-    {
-        tcb->taskPriority = taskpri;
-        g_TcbList.taskReadyList|= (0x1<<taskpri);
-    }
-    else
-    {
-        tcb->taskPriority = taskpri;
-    }
-    
-    memset(stackbut,0,sizeof(uint8_t)*stacksize);
-    tcb->pv_taskSp = (uint32_t)stackbut + stacksize;
-
-    npos_sp_init(tcb);
-
-    tcb->p_nextTcb = NULL;
-
-    if(g_TcbList.taskList[0].taskNode == NULL){
-        g_TcbList.taskList[0].taskNode = tcb;
-        tcb->p_nextTcb = g_TcbList.taskList[0].taskNode;
-    }
-    else{
-        g_TcbList.taskList[taskpri].taskNode = tcb;
-        tcb->p_nextTcb = g_TcbList.taskList[taskpri].taskNode;
-    }
-    LOG_OK("task","task create successfully");
-    return Exc_OK;
-
-}
-
-
-/**
-    \brief  OS入口 
-                调用此函数后cpu的使用权与控制器正式交给os
-    \param[in]  none
-    \retval none
-*/
-void NpOS_Start(){
-    gp_currentTcb = g_TcbList.taskList[0].taskNode;
-    System_tickInit();
-    root_task_entry(gp_currentTcb);
-}
 
 /**
     \brief  获取当前readylist中优先级最高的任务
@@ -235,56 +398,26 @@ void npos_get_highest_priority(){
     NpOS_EXIT_CRITICAL();
 }
 
+
+
 /**
-    \brief  主动开始一次任务调度
-            用以当前任务主动放弃cpu的使用权
+    \brief  插入结点到pendlist
     \param[in]  none
-    \retval none
+    \retval task_funcsta 返回函数执行情况
 */
-void NpOS_task_startSchedul(){
-    TIMER_WRITE_REG(TIMER_MSIP) = 1;
-}
-
-/**
-    \brief  os延时函数 用以将当前任务挂起Ticks个时间
-    \param[in]  uint32_t ticks  任务需要等待的tick数 每个ticks的持续时间由Npos_config.h中的 NPOS_SchedulingInterval_MS 决定
-    \retval none
-*/
-void NpOS_task_pendDelayTicks(uint32_t ticks){
-
-    NpOS_ENTER_CRITICAL();
+task_funcsta npos_insertIntoPendList(){
     Np_TCB* lp_pendNode;
     lp_pendNode = g_TcbList.taskPendList;
-    //改变当前任务的状态以及ticks数，并将其从就绪表中移除
-    gp_currentTcb->taskDelayTick = ticks;
-    gp_currentTcb->taskStatus = TASK_PEND;
-    g_TcbList.taskReadyList &= ~( 0x1 << (gp_currentTcb->taskPriority));
-    
     while(lp_pendNode->p_nextTcb!=NULL){
         lp_pendNode = lp_pendNode->p_nextTcb;
     }
     lp_pendNode->p_nextTcb = gp_currentTcb;
     gp_currentTcb->p_lastTcb = lp_pendNode;
     gp_currentTcb->p_nextTcb = NULL;
-    NpOS_EXIT_CRITICAL();
-
-    NpOS_task_startSchedul();
-}
-
-
-/**
-    \brief  任务调度函数
-    \param[in]  none
-    \retval none
-*/
-void NpOS_task_schedul(){
     
-    //获取下一个优先级最高的任务tcb
-    npos_get_highest_priority();
-
-    //恢复上下文
-    switch_to(gp_currentTcb);
+    return Exc_OK;
 }
+
 
 /**
     \brief  用以减少pendlist中的任务的ticks数
@@ -301,18 +434,14 @@ void npos_taskpendTick_dec(){
         lp_pendNode->p_nextTcb->taskDelayTick-=1;
 
         if(lp_pendNode->p_nextTcb->taskDelayTick == 0){
-            lp_pendOverNode = lp_pendNode->p_nextTcb;
-            lp_pendNode->p_nextTcb = lp_pendOverNode->p_nextTcb;
-
-            if(lp_pendOverNode->p_nextTcb!=NULL){
-                lp_pendOverNode->p_nextTcb->p_lastTcb = lp_pendNode;
-            }
+            lp_pendOverNode = npos_deleteFromPendList(lp_pendNode->p_nextTcb);
 
             g_TcbList.taskList[lp_pendOverNode->taskPriority].taskNode = lp_pendOverNode;
             lp_pendOverNode->p_nextTcb = NULL;
             lp_pendOverNode->p_lastTcb = g_TcbList.taskList[lp_pendOverNode->taskPriority].taskNode;
             lp_pendOverNode->taskStatus = TASK_READY;
-            g_TcbList.taskReadyList |= (0x1 << (lp_pendOverNode->taskPriority));
+
+            npos_task_setTaskReadyFlag(lp_pendOverNode);
 
         }
         else
@@ -325,31 +454,21 @@ void npos_taskpendTick_dec(){
 }
 
 /**
-    \brief  系统心跳中断服务函数
-    \param[in]  none
-    \retval none
+    \brief  删除pendlist节点函数
+    \param[in]  Np_TCB* tcbnode 要删除的结点
+    \retval Np_TCB* 被删除的结点指针
 */
-void eclic_mtip_handler(){
-
-    context_save();
-
-    g_npos_systime_Ticks += 1;
-    npos_taskpendTick_dec();
+Np_TCB* npos_deleteFromPendList(Np_TCB* tcbnode){
+    Np_TCB* lp_lastNode;
+    lp_lastNode = tcbnode->p_lastTcb;
+    lp_lastNode->p_nextTcb = tcbnode->p_nextTcb;
     
-    NpOS_task_schedul();
 
-    TIMER_WRITE_REG(TIMER_MTIME) = 0x0;
-    // TIMER_WRITE_REG(TIMER_MTIME+4) = 0x0;
+    if(tcbnode->p_nextTcb!=NULL){
+        tcbnode->p_nextTcb->p_lastTcb = lp_lastNode;
+    }
+
+    return tcbnode;
 
 }
 
-/**
-    \brief  msip中断服务函数
-    \param[in]  none
-    \retval none
-*/
-void eclic_msip_handler(){
-    context_save();
-    NpOS_task_schedul();
-    TIMER_WRITE_REG(TIMER_MSIP) = 0;
-}
