@@ -23,7 +23,11 @@ void npos_sp_init(
                 uint32_t stacksize
                 );
 void npos_idletaskinit();
-task_funcsta npos_task_insertIntoTaskList(
+task_funcsta npos_task_insertIntotaskReadyList(
+                        Np_TCB* _tcb,
+                        TASK_PRIORITY_TYPE _taskpri
+                        );
+Np_TCB* npos_task_deleteFromtaskReadyList(
                         Np_TCB* _tcb,
                         TASK_PRIORITY_TYPE _taskpri
                         );
@@ -126,7 +130,7 @@ task_funcsta NpOS_task_createTask(
     
     npos_sp_init(tcb,stackbut,stacksize);
 
-    if(!npos_task_insertIntoTaskList(tcb,taskpri))
+    if(!npos_task_insertIntotaskReadyList(tcb,taskpri))
         return Exc_ERROR;
 
     LOG_OK("system","task create successfully");
@@ -142,12 +146,12 @@ task_funcsta NpOS_task_createTask(
 */
 task_funcsta NpOS_task_deleteTask(Np_TCB* tcb){
     NpOS_ENTER_CRITICAL();
-    if(tcb == g_TcbList.taskList[0].taskNode){
+    if(tcb == g_TcbList.taskReadyList[0].taskNode){
         LOG_ERR("system","Sorry you couldn't delete idle task");
         NpOS_EXIT_CRITICAL();
         return Exc_ERROR;
     }
-    g_TcbList.taskList[tcb->taskPriority].taskNode = NULL;
+    g_TcbList.taskReadyList[tcb->taskPriority].taskNode = NULL;
     tcb->taskStatus = TASK_UNKNOWN;
     npos_task_clearTaskReadyFlag(tcb);
     LOG_OK("system","task delete successfully");
@@ -164,7 +168,7 @@ task_funcsta NpOS_task_deleteTask(Np_TCB* tcb){
 */
 task_funcsta NpOS_task_pendTask(Np_TCB* tcb){
     NpOS_ENTER_CRITICAL();
-    if(tcb == g_TcbList.taskList[0].taskNode){
+    if(tcb == g_TcbList.taskReadyList[0].taskNode){
         LOG_ERR("system","Sorry you couldn't pend idle task");
         NpOS_EXIT_CRITICAL();
         return Exc_ERROR;
@@ -174,7 +178,7 @@ task_funcsta NpOS_task_pendTask(Np_TCB* tcb){
         NpOS_EXIT_CRITICAL();
         return Exc_ERROR;
     }
-    // g_TcbList.taskList[tcb->taskPriority].taskNode = NULL;
+    // g_TcbList.taskReadyList[tcb->taskPriority].taskNode = NULL;
     tcb->taskStatus = TASK_PEND;
     npos_task_clearTaskReadyFlag(tcb);
     LOG_OK("system","task pend successfully");
@@ -234,6 +238,8 @@ void NpOS_task_pendDelayTicks(uint32_t ticks){
 
     npos_task_clearTaskReadyFlag(gp_currentTcb);
 
+    npos_task_deleteFromtaskReadyList(gp_currentTcb,gp_currentTcb->taskPriority);
+
     npos_insertIntoPendList();
 
     NpOS_EXIT_CRITICAL();
@@ -262,7 +268,7 @@ void NpOS_task_schedul(){
     \retval none
 */
 void NpOS_Start(){
-    gp_currentTcb = g_TcbList.taskList[0].taskNode;
+    gp_currentTcb = g_TcbList.taskReadyList[0].taskNode;
     System_tickInit();
     root_task_entry(gp_currentTcb);
 }
@@ -353,7 +359,7 @@ void idleTask(){
     \retval none
 */
 void npos_task_setTaskReadyFlag(Np_TCB* tcb){
-    g_TcbList.taskReadyList |= (0x1 << tcb->taskPriority);
+    g_TcbList.taskReadyflag |= (0x1 << tcb->taskPriority);
 }
 
 /**
@@ -362,7 +368,7 @@ void npos_task_setTaskReadyFlag(Np_TCB* tcb){
     \retval none
 */
 void npos_task_clearTaskReadyFlag(Np_TCB* tcb){
-    g_TcbList.taskReadyList &= ~( 0x1 << (tcb->taskPriority));
+    g_TcbList.taskReadyflag &= ~( 0x1 << (tcb->taskPriority));
 }
 
 /**
@@ -381,12 +387,12 @@ void npos_task_lpendListInit(){
     \retval none
 */
 void npos_task_gTcbListInit(){
-    // g_TcbList.taskList[0].taskNode = NULL;
+    // g_TcbList.taskReadyList[0].taskNode = NULL;
     for(int i = 0;i<NPOS_TASK_PRIORITY_NUMBER;i++){
-        g_TcbList.taskList[i].taskNode = NULL;
+        g_TcbList.taskReadyList[i].taskNode = NULL;
     }
     g_TcbList.taskPendList = &l_pendListRootNode;
-    g_TcbList.taskReadyList = 0;
+    g_TcbList.taskReadyflag = 0;
 }
 
 /**
@@ -405,24 +411,61 @@ void npos_idletaskinit(){
     \param[in]  TASK_PRIORITY_TYPE _taskpri 任务优先级
     \retval task_funcsta 返回任务执行状态代码
 */
-task_funcsta npos_task_insertIntoTaskList(
+task_funcsta npos_task_insertIntotaskReadyList(
                         Np_TCB* _tcb,
                         TASK_PRIORITY_TYPE _taskpri
                         ){
 
-    if(g_TcbList.taskList[0].taskNode == NULL){
-        g_TcbList.taskList[0].taskNode = _tcb;
-        _tcb->p_nextTcb = g_TcbList.taskList[0].taskNode;
+    if(g_TcbList.taskReadyList[TASK_SYSTEMKEEP_LOWEST_PRIORITY].taskNode == NULL){
+        g_TcbList.taskReadyList[TASK_SYSTEMKEEP_LOWEST_PRIORITY].taskNode = _tcb;
+        _tcb->p_nextTcb = g_TcbList.taskReadyList[TASK_SYSTEMKEEP_LOWEST_PRIORITY].taskNode;
     }
     else{
-        if(g_TcbList.taskList[_taskpri].taskNode!=NULL){
-            LOG_ERR("system","this priority has been used .");
-            return Exc_ERROR;
+        if(g_TcbList.taskReadyList[_taskpri].taskNode==NULL){
+            g_TcbList.taskReadyList[_taskpri].taskNode = _tcb;
+            _tcb->p_nextTcb = NULL;
+            _tcb->p_lastTcb = _tcb;
         }
-        g_TcbList.taskList[_taskpri].taskNode = _tcb;
+
+        Np_TCB* lp_perNdoe;
+        lp_perNdoe = g_TcbList.taskReadyList[_taskpri].taskNode;
+        while(lp_perNdoe->p_nextTcb != NULL){
+            lp_perNdoe = lp_perNdoe->p_nextTcb;
+        }
+        lp_perNdoe->p_nextTcb = _tcb;
+        _tcb->p_lastTcb = lp_perNdoe;
         _tcb->p_nextTcb = NULL;
+        
     }
     return Exc_OK;
+}
+
+/**
+    \brief  从就绪列表中删除一个结点
+    \param[in]  Np_TCB* tcb 需要初始化的tcb的指针
+    \param[in]  TASK_PRIORITY_TYPE _taskpri 任务优先级
+    \retval Np_TCB* 返回删除的结点的指针
+*/
+Np_TCB* npos_task_deleteFromtaskReadyList(
+                        Np_TCB* _tcb,
+                        TASK_PRIORITY_TYPE _taskpri
+                        ){
+    Np_TCB* lp_perNdoe;
+    lp_perNdoe = g_TcbList.taskReadyList[_taskpri].taskNode;
+    if(lp_perNdoe == _tcb){
+        lp_perNdoe = lp_perNdoe->p_nextTcb;
+        if(lp_perNdoe!=NULL)    lp_perNdoe->p_lastTcb = lp_perNdoe;
+        _tcb->p_nextTcb = NULL;
+        return _tcb;
+    }
+
+    while(lp_perNdoe->p_nextTcb != _tcb){
+        lp_perNdoe = lp_perNdoe->p_nextTcb;
+    }
+    lp_perNdoe->p_nextTcb = _tcb->p_nextTcb;
+    if(lp_perNdoe->p_nextTcb != NULL)   lp_perNdoe->p_nextTcb->p_lastTcb = lp_perNdoe;
+    _tcb->p_nextTcb = NULL;
+    return _tcb;
 }
 
 /**
@@ -468,32 +511,13 @@ void npos_get_highest_priority(){
     NpOS_ENTER_CRITICAL();
     TASK_PRIORITY_TYPE l_highestPri =0;
     Np_TCB* lp_nexttcb;
-    l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyList];
-    lp_nexttcb = g_TcbList.taskList[l_highestPri].taskNode;
+    l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyflag];
+    lp_nexttcb = g_TcbList.taskReadyList[l_highestPri].taskNode;
     if(gp_currentTcb == lp_nexttcb) return;
     else gp_currentTcb = lp_nexttcb;
     NpOS_EXIT_CRITICAL();
 }
 
-
-
-/**
-    \brief  插入结点到pendlist
-    \param[in]  none
-    \retval task_funcsta 返回函数执行情况
-*/
-task_funcsta npos_insertIntoPendList(){
-    Np_TCB* lp_pendNode;
-    lp_pendNode = g_TcbList.taskPendList;
-    while(lp_pendNode->p_nextTcb!=NULL){
-        lp_pendNode = lp_pendNode->p_nextTcb;
-    }
-    lp_pendNode->p_nextTcb = gp_currentTcb;
-    gp_currentTcb->p_lastTcb = lp_pendNode;
-    gp_currentTcb->p_nextTcb = NULL;
-    
-    return Exc_OK;
-}
 
 
 /**
@@ -513,9 +537,8 @@ void npos_taskpendTick_dec(){
         if(lp_pendNode->p_nextTcb->taskDelayTick == 0){
             lp_pendOverNode = npos_deleteFromPendList(lp_pendNode->p_nextTcb);
 
-            g_TcbList.taskList[lp_pendOverNode->taskPriority].taskNode = lp_pendOverNode;
-            lp_pendOverNode->p_nextTcb = NULL;
-            lp_pendOverNode->p_lastTcb = g_TcbList.taskList[lp_pendOverNode->taskPriority].taskNode;
+            npos_task_insertIntotaskReadyList(lp_pendOverNode,lp_pendOverNode->taskPriority);
+
             lp_pendOverNode->taskStatus = TASK_READY;
 
             npos_task_setTaskReadyFlag(lp_pendOverNode);
@@ -528,6 +551,24 @@ void npos_taskpendTick_dec(){
 
         
     }
+}
+
+/**
+    \brief  插入结点到pendlist
+    \param[in]  none
+    \retval task_funcsta 返回函数执行情况
+*/
+task_funcsta npos_insertIntoPendList(){
+    Np_TCB* lp_pendNode;
+    lp_pendNode = g_TcbList.taskPendList;
+    while(lp_pendNode->p_nextTcb!=NULL){
+        lp_pendNode = lp_pendNode->p_nextTcb;
+    }
+    lp_pendNode->p_nextTcb = gp_currentTcb;
+    gp_currentTcb->p_lastTcb = lp_pendNode;
+    gp_currentTcb->p_nextTcb = NULL;
+    
+    return Exc_OK;
 }
 
 /**

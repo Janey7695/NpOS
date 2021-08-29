@@ -4,7 +4,7 @@
 
 
 //任务状态
-typedef enum {TASK_RUN = 0,TASK_PEND,TASK_WAIT,TASK_READY}task_status;
+typedef enum {TASK_PEND=0,TASK_WAIT,TASK_READY,TASK_UNKNOWN}task_status;
 
 //执行一些函数的返回情况
 typedef enum {Exc_ERROR = 0,Exc_OK}task_funcsta;
@@ -49,9 +49,9 @@ typedef struct tcbb
 
 typedef struct tcblist
 {
-    Np_tasklist taskList[NPOS_TASK_PRIORITY_NUMBER];
+    Np_tasklist taskReadyList[NPOS_TASK_PRIORITY_NUMBER];
     Np_TCB* taskPendList;
-    TASK_PRIORITY_TYPE taskReadyList;
+    TASK_PRIORITY_TYPE taskReadyflag;
 }Np_tcblist;
 
 extern void switch_to(Np_TCB* nexttcb);
