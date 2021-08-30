@@ -1,4 +1,4 @@
-# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.0.0 (shields.io)](https://img.shields.io/badge/version-1.0.0-brightgreen)
+# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.4.6 (shields.io)](https://img.shields.io/badge/version-1.4.6-brightgreen)
 a simple Embedded Real-Time Operating System
 
 ## 简介
