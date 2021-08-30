@@ -141,7 +141,7 @@ task_funcsta NpOS_task_createTask(
 /**
     \brief  delete a task
     \param[in]  Np_TCB* tcb  任务所属的任务控制块的指针
-    \retval task_funcsta 返回任务的执行情况
+    \retval task_funcsta 返回函数的执行情况
 */
 task_funcsta NpOS_task_deleteTask(Np_TCB* tcb){
     NpOS_ENTER_CRITICAL();
@@ -167,6 +167,7 @@ task_funcsta NpOS_task_deleteTask(Np_TCB* tcb){
 
 /**
     \brief  pend a task
+            
             若使用该函数挂起一个正在延时pend的任务，重新ready这个任务后会刷新其delayTicks
     \param[in]  Np_TCB* tcb  任务所属的任务控制块的指针
     \retval task_funcsta 返回任务的执行情况
@@ -187,11 +188,11 @@ task_funcsta NpOS_task_pendTask(Np_TCB* tcb){
 
     if(tcb->taskStatus == TASK_PEND){
         LOG_WARING("system","this task has been Pend statu");
+
         npos_deleteFromPendList(tcb);
     }
-    
     npos_task_deleteFromtaskReadyList(tcb,tcb->taskPriority);
-    
+
     tcb->taskStatus = TASK_PEND;
     npos_task_clearTaskReadyFlag(tcb);
     LOG_OK("system","task pend successfully");
@@ -219,6 +220,12 @@ task_funcsta NpOS_task_readyTask(Np_TCB* tcb){
         NpOS_EXIT_CRITICAL();
         return Exc_ERROR;
     }
+
+    if(tcb->taskStatus == TASK_PEND){
+        npos_deleteFromPendList(tcb);
+    }
+    npos_task_insertIntotaskReadyList(tcb,tcb->taskPriority);
+    tcb->taskDelayTick = 0;
     tcb->taskStatus = TASK_READY;
     npos_task_setTaskReadyFlag(tcb);
     LOG_OK("system","task is set to be ready");
@@ -400,7 +407,6 @@ void npos_task_lpendListInit(){
     \retval none
 */
 void npos_task_gTcbListInit(){
-    // g_TcbList.taskReadyList[0].taskNode = NULL;
     for(int i = 0;i<NPOS_TASK_PRIORITY_NUMBER;i++){
         g_TcbList.taskReadyList[i].taskNode = NULL;
     }
@@ -478,6 +484,7 @@ Np_TCB* npos_task_deleteFromtaskReadyList(
     lp_perNdoe->p_nextTcb = _tcb->p_nextTcb;
     if(lp_perNdoe->p_nextTcb != NULL)   lp_perNdoe->p_nextTcb->p_lastTcb = lp_perNdoe;
     _tcb->p_nextTcb = NULL;
+    _tcb->p_lastTcb = NULL;
     return _tcb;
 }
 
@@ -591,12 +598,17 @@ task_funcsta npos_insertIntoPendList(){
 */
 Np_TCB* npos_deleteFromPendList(Np_TCB* tcbnode){
     Np_TCB* lp_lastNode;
-    lp_lastNode = tcbnode->p_lastTcb;
-    lp_lastNode->p_nextTcb = tcbnode->p_nextTcb;
-    
+    if(tcbnode->p_lastTcb!=NULL){
+        lp_lastNode = tcbnode->p_lastTcb;
+        lp_lastNode->p_nextTcb = tcbnode->p_nextTcb;
+        
 
-    if(tcbnode->p_nextTcb!=NULL){
-        tcbnode->p_nextTcb->p_lastTcb = lp_lastNode;
+        if(tcbnode->p_nextTcb!=NULL){
+            tcbnode->p_nextTcb->p_lastTcb = lp_lastNode;
+        }
+
+        tcbnode->p_lastTcb = NULL;
+        tcbnode->p_nextTcb = NULL;
     }
 
     return tcbnode;
