@@ -92,8 +92,26 @@ int main(void)
 - [ ] 系统框架稳定性测试，测试gd的固件库能否在Npos上正常使用
 - [ ] 增加优先级数量
 - [ ] 加入基于时间片调度的调度算法
+- [ ] 加入一些零零散散的系统API
 
 ## ChangeLog
+
+### [1.4.6] - 2021-08-30
+
+#### Changed
+- 优化就绪列表相关函数，使这些函数对链表结点的操作更加准确
+- 修改格式，添加最低优先级宏
+
+#### Fixed
+- - 修复[1.4.1]新增的3个API的bug
+
+### [1.4.1] - 2021-08-27
+
+#### Added
+
+- new api for pending task
+- new api for deleting task
+- new api for ready a task
 
 ### [1.0.0] - 2021-08-25
 

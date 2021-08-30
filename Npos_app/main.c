@@ -45,7 +45,8 @@ int main(void)
     NpOS_task_tcblistInit();
 
     NpOS_task_createTask(
-        &task_Tcb,task,
+        &task_Tcb,
+        task,
         7,
         task_Stack,
         task_StackSize,
