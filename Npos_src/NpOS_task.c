@@ -167,7 +167,7 @@ task_funcsta NpOS_task_deleteTask(Np_TCB* tcb){
 
 /**
     \brief  pend a task
-            TODO:该函数无法挂起一个正在延时的函数
+            若使用该函数挂起一个正在延时pend的任务，重新ready这个任务后会刷新其delayTicks
     \param[in]  Np_TCB* tcb  任务所属的任务控制块的指针
     \retval task_funcsta 返回任务的执行情况
 */
@@ -178,12 +178,20 @@ task_funcsta NpOS_task_pendTask(Np_TCB* tcb){
         NpOS_EXIT_CRITICAL();
         return Exc_ERROR;
     }
-    if(tcb->taskStatus == TASK_PEND){
-        LOG_ERR("system","Sorry you couldn't pend a pending task");
+
+    if(tcb->taskStatus == TASK_UNKNOWN){
+        LOG_ERR("system","this task's statu is unknown,couldn't been set to pend");
         NpOS_EXIT_CRITICAL();
         return Exc_ERROR;
     }
-    // g_TcbList.taskReadyList[tcb->taskPriority].taskNode = NULL;
+
+    if(tcb->taskStatus == TASK_PEND){
+        LOG_WARING("system","this task has been Pend statu");
+        npos_deleteFromPendList(tcb);
+    }
+    
+    npos_task_deleteFromtaskReadyList(tcb,tcb->taskPriority);
+    
     tcb->taskStatus = TASK_PEND;
     npos_task_clearTaskReadyFlag(tcb);
     LOG_OK("system","task pend successfully");
