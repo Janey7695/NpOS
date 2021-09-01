@@ -1,9 +1,14 @@
+<img src=".\readme_img\Npos图标.png" alt="Npos图标" style="zoom:75%;" />
+
 # NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.4.6 (shields.io)](https://img.shields.io/badge/version-1.4.6-brightgreen)
+
 a simple Embedded Real-Time Operating System
 
 ## 简介
 
 `NpOS`以运行在RISC-V架构芯片上的完整的嵌入式实时操作系统为目标。目前可以进行基于抢占优先级的调度，实现多任务。课余时间的小实践。
+
+<img src=".\readme_img\Npos系统框架.png" alt="Npos系统框架" style="zoom:75%;" />
 
 ## NpOS
 
@@ -87,12 +92,12 @@ int main(void)
 
 ## TODO
 
-### [1.0.0]
-
 - [ ] 系统框架稳定性测试，测试gd的固件库能否在Npos上正常使用
 - [ ] 增加优先级数量
 - [ ] 加入基于时间片调度的调度算法
 - [ ] 加入一些零零散散的系统API
+- [ ] 添加各类组件
+  - [ ] 文件系统
 
 ## ChangeLog
 
