@@ -1,5 +1,5 @@
 #include "../Npos_inc/NpOS.h"
-#include "../Npos_cpu/systick.h"
+// #include "../Npos_cpu/systick.h"
 #include "string.h"
 #include "stdio.h"
 
@@ -117,16 +117,25 @@ task_funcsta NpOS_task_createTask(
     
     tcb->p_nextTcb = NULL;
 
-    if(taskstatus == TASK_READY)
-    {
-        tcb->taskPriority = taskpri;
+    if(taskpri<NPOS_TASK_PRIORITY_NUMBER){
+        if(taskstatus == TASK_READY)
+            {
+                tcb->taskPriority = taskpri;
 
-        npos_task_setTaskReadyFlag(tcb);
+                npos_task_setTaskReadyFlag(tcb);
+            }
+            else
+            {
+                tcb->taskPriority = taskpri;
+            }
     }
     else
     {
-        tcb->taskPriority = taskpri;
+        LOG_ERR("system","your taskPriority is higher than the Highiest priority ");
+        return Exc_ERROR;
     }
+
+    
     
     npos_sp_init(tcb,stackbut,stacksize);
 
@@ -289,6 +298,7 @@ void NpOS_task_schedul(){
 */
 void NpOS_Start(){
     gp_currentTcb = g_TcbList.taskReadyList[0].taskNode;
+    // printf("%d,%d,%d\n",g_TcbList.taskReadyflag1,g_TcbList.taskReadyflag2[0],g_TcbList.taskReadyflag2[1]);
     System_tickInit();
     root_task_entry(gp_currentTcb);
 }
@@ -379,7 +389,24 @@ void idleTask(){
     \retval none
 */
 void npos_task_setTaskReadyFlag(Np_TCB* tcb){
+
+#if NPOS_TASK_PRIORITY_NUMBER == NPOS_TASK_PRIORITY_NUMBER_8
     g_TcbList.taskReadyflag |= (0x1 << tcb->taskPriority);
+
+#elif NPOS_TASK_PRIORITY_NUMBER <= NPOS_TASK_PRIORITY_NUMBER_64 && NPOS_TASK_PRIORITY_NUMBER > NPOS_TASK_PRIORITY_NUMBER_8
+    g_TcbList.taskReadyflag1 |= (0x1 << (tcb->taskPriority/8));
+    g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[(0x1 << (tcb->taskPriority/8))]] |= (0x1 << (tcb->taskPriority%8));
+    
+#elif NPOS_TASK_PRIORITY_NUMBER>=NPOS_TASK_PRIORITY_NUMBER_128
+    g_TcbList.taskReadyflag1 |= (0x1 << (tcb->taskPriority/64));
+    g_TcbList.taskReadyflag2[tcb->taskPriority/64] |= (0x1 << (tcb->taskPriority%64)/8);
+    // g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[0x1 << (tcb->taskPriority/64)]] |= (0x1 << (tcb->taskPriority/8%8));
+    // (c_taskPrioMask2Prio[0x1 << (tcb->taskPriority/64)]*8)+(c_taskPrioMask2Prio[0x1 << (tcb->taskPriority%64/8)])
+    // g_TcbList.taskReadyflag3[(c_taskPrioMask2Prio[0x1 << (tcb->taskPriority/64)]*8)+(c_taskPrioMask2Prio[0x1 << (tcb->taskPriority%64/8)])] |= (0x1 << (tcb->taskPriority%64)%8);
+    g_TcbList.taskReadyflag3[tcb->taskPriority/8] |= (0x1 << (tcb->taskPriority%8));
+#endif
+
+
 }
 
 /**
@@ -388,7 +415,35 @@ void npos_task_setTaskReadyFlag(Np_TCB* tcb){
     \retval none
 */
 void npos_task_clearTaskReadyFlag(Np_TCB* tcb){
+
+#if NPOS_TASK_PRIORITY_NUMBER == NPOS_TASK_PRIORITY_NUMBER_8
     g_TcbList.taskReadyflag &= ~( 0x1 << (tcb->taskPriority));
+
+#elif NPOS_TASK_PRIORITY_NUMBER <= NPOS_TASK_PRIORITY_NUMBER_64 && NPOS_TASK_PRIORITY_NUMBER > NPOS_TASK_PRIORITY_NUMBER_8
+    // g_TcbList.taskReadyflag1 |= (0x1 << (tcb->taskPriority/8));
+    // g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[(0x1 << (tcb->taskPriority/8))]] &= ~(0x1 << (tcb->taskPriority%8));
+    g_TcbList.taskReadyflag2[tcb->taskPriority/8] &= ~(uint8_t)(0x1 << (tcb->taskPriority%8));
+    if(g_TcbList.taskReadyflag2[tcb->taskPriority/8] == 0){
+        g_TcbList.taskReadyflag1 &= ~(uint8_t)(0x1 << (tcb->taskPriority/8));
+    }
+    printf("%d,%d,%d\n",g_TcbList.taskReadyflag1,g_TcbList.taskReadyflag2[0],g_TcbList.taskReadyflag2[1]);
+
+#elif NPOS_TASK_PRIORITY_NUMBER>=NPOS_TASK_PRIORITY_NUMBER_128
+    // g_TcbList.taskReadyflag1 |= (0x1 << (tcb->taskPriority/64));
+    // g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[tcb->taskPriority/64]] |= (0x1 << (tcb->taskPriority%64/8));
+    // g_TcbList.taskReadyflag3[(c_taskPrioMask2Prio[0x1 << (tcb->taskPriority/64)]*8)+(c_taskPrioMask2Prio[0x1 << (tcb->taskPriority%64/8)])] &= ~(0x1 << (tcb->taskPriority%64)%8);
+    g_TcbList.taskReadyflag3[tcb->taskPriority/8] &= ~(0x1 << (tcb->taskPriority%8));
+    // g_TcbList.taskReadyflag3[c_taskPrioMask2Prio[tcb->taskPriority%64/8]] &= ~(0x1 << (tcb->taskPriority%64%8));
+
+    if(g_TcbList.taskReadyflag3[tcb->taskPriority/8] == 0){
+        g_TcbList.taskReadyflag2[tcb->taskPriority/64] &= ~(0x1 << (tcb->taskPriority%64)/8);
+        if(g_TcbList.taskReadyflag2[tcb->taskPriority/64] == 0){
+            g_TcbList.taskReadyflag1 &= ~(0x1 << (tcb->taskPriority/64));
+        }
+    }
+
+#endif
+
 }
 
 /**
@@ -411,7 +466,27 @@ void npos_task_gTcbListInit(){
         g_TcbList.taskReadyList[i].taskNode = NULL;
     }
     g_TcbList.taskPendList = &l_pendListRootNode;
+
+#if NPOS_TASK_PRIORITY_NUMBER == NPOS_TASK_PRIORITY_NUMBER_8
     g_TcbList.taskReadyflag = 0;
+
+#elif NPOS_TASK_PRIORITY_NUMBER <= NPOS_TASK_PRIORITY_NUMBER_64 && NPOS_TASK_PRIORITY_NUMBER > NPOS_TASK_PRIORITY_NUMBER_8
+    for(int l_counter = 0;l_counter < NPOS_TASK_PRIORITY_NUMBER/8;l_counter++){
+        g_TcbList.taskReadyflag2[l_counter] = 0;
+    }
+    g_TcbList.taskReadyflag1 = 0;
+
+#elif NPOS_TASK_PRIORITY_NUMBER>=NPOS_TASK_PRIORITY_NUMBER_128
+    for(int l_counter = 0;l_counter < NPOS_TASK_PRIORITY_NUMBER/8;l_counter++){
+        g_TcbList.taskReadyflag3[l_counter] = 0;
+    }
+    for(int l_counter = 0;l_counter < NPOS_TASK_PRIORITY_NUMBER/64;l_counter++){
+        g_TcbList.taskReadyflag2[l_counter] = 0;
+    }
+    g_TcbList.taskReadyflag1 = 0;
+
+
+#endif
 }
 
 /**
@@ -531,10 +606,35 @@ void npos_get_highest_priority(){
     NpOS_ENTER_CRITICAL();
     TASK_PRIORITY_TYPE l_highestPri =0;
     Np_TCB* lp_nexttcb;
+
+
+#if NPOS_TASK_PRIORITY_NUMBER == NPOS_TASK_PRIORITY_NUMBER_8
     l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyflag];
     lp_nexttcb = g_TcbList.taskReadyList[l_highestPri].taskNode;
-    if(gp_currentTcb == lp_nexttcb) return;
-    else gp_currentTcb = lp_nexttcb;
+    gp_currentTcb = lp_nexttcb;
+
+#elif NPOS_TASK_PRIORITY_NUMBER <= NPOS_TASK_PRIORITY_NUMBER_64 && NPOS_TASK_PRIORITY_NUMBER > NPOS_TASK_PRIORITY_NUMBER_8
+    l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]*8+
+                    c_taskPrioMask2Prio[g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]]];
+    // l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyflag2[0]];
+    // printf("%d\n",l_highestPri);
+    
+    lp_nexttcb = g_TcbList.taskReadyList[l_highestPri].taskNode;
+    // if(gp_currentTcb == lp_nexttcb) return;
+    // else 
+    gp_currentTcb = lp_nexttcb;
+
+#elif NPOS_TASK_PRIORITY_NUMBER>=NPOS_TASK_PRIORITY_NUMBER_128
+    l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]*64+
+                    c_taskPrioMask2Prio[g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]]]*8+
+                    c_taskPrioMask2Prio[g_TcbList.taskReadyflag3[c_taskPrioMask2Prio[g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]]]]];
+    lp_nexttcb = g_TcbList.taskReadyList[l_highestPri].taskNode;
+    printf("%d\n",l_highestPri);
+    gp_currentTcb = lp_nexttcb;
+
+#endif
+
+
     NpOS_EXIT_CRITICAL();
 }
 

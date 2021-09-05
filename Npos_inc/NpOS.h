@@ -8,7 +8,7 @@
 // #include "gd32vf103.h"
 
 #define OS_NAME      "Not_Popular Real-Time Operate System"
-#define OS_VERSION    "1.4.6"
+#define OS_VERSION    "1.5.0"
 #define OS_RELEASED   "2021-8-25"
 #define OS_DESIGNED    "JaneyXu"
 

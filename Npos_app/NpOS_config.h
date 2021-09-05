@@ -20,7 +20,17 @@
 #define NPOS_TASK_IDLE_USAGERATE_EN 0
 
 // 允许的最多优先级数量
-#define NPOS_TASK_PRIORITY_NUMBER   8
+#define NPOS_TASK_PRIORITY_NUMBER_8         8
+#define NPOS_TASK_PRIORITY_NUMBER_16        16
+#define NPOS_TASK_PRIORITY_NUMBER_32        32
+#define NPOS_TASK_PRIORITY_NUMBER_64        64
+
+//128往上的优先级存在bug 暂时不建议使用
+#define NPOS_TASK_PRIORITY_NUMBER_128       128
+#define NPOS_TASK_PRIORITY_NUMBER_256       256
+
+//在这里填写对应数量级的宏
+#define NPOS_TASK_PRIORITY_NUMBER   NPOS_TASK_PRIORITY_NUMBER_8
 
 //优先级列表使用的数据类型
 #define TASK_PRIORITY_TYPE  uint8_t

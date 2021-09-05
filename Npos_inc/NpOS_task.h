@@ -27,7 +27,7 @@ typedef struct tcb
     void (*p_taskFunction)(void);
 
     //任务优先级
-    TASK_PRIORITY_TYPE taskPriority;
+    uint8_t taskPriority;
     
     //任务状态
     task_status taskStatus;
@@ -51,12 +51,25 @@ typedef struct tcblist
 {
     Np_tasklist taskReadyList[NPOS_TASK_PRIORITY_NUMBER];
     Np_TCB* taskPendList;
+
+#if NPOS_TASK_PRIORITY_NUMBER == NPOS_TASK_PRIORITY_NUMBER_8
     TASK_PRIORITY_TYPE taskReadyflag;
+#elif NPOS_TASK_PRIORITY_NUMBER <= NPOS_TASK_PRIORITY_NUMBER_64 && NPOS_TASK_PRIORITY_NUMBER > NPOS_TASK_PRIORITY_NUMBER_8
+    TASK_PRIORITY_TYPE taskReadyflag2[NPOS_TASK_PRIORITY_NUMBER/8];
+    TASK_PRIORITY_TYPE taskReadyflag1;
+#elif NPOS_TASK_PRIORITY_NUMBER>=NPOS_TASK_PRIORITY_NUMBER_128
+    TASK_PRIORITY_TYPE taskReadyflag3[NPOS_TASK_PRIORITY_NUMBER/8];
+    TASK_PRIORITY_TYPE taskReadyflag2[NPOS_TASK_PRIORITY_NUMBER/64];
+    TASK_PRIORITY_TYPE taskReadyflag1;
+#endif
+
 }Np_tcblist;
 
 extern void switch_to(Np_TCB* nexttcb);
 extern void context_save();
 extern void root_task_entry(Np_TCB* roottcb);
+
+
 
 extern Np_tcblist g_TcbList;
 extern Np_TCB* gp_currentTcb;
