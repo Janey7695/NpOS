@@ -80,8 +80,8 @@ task_funcsta NpOS_task_createTask(Np_TCB* tcb,p_taskFunction taskfunc,TASK_PRIOR
 task_funcsta NpOS_task_deleteTask(Np_TCB* tcb);
 task_funcsta NpOS_task_pendTask(Np_TCB* tcb);
 task_funcsta NpOS_task_readyTask(Np_TCB* tcb);
-
 void NpOS_task_pendDelayTicks(uint32_t ticks);
+
 void NpOS_roottask();
 void NpOS_Start();
 void NpOS_task_startSchedul();

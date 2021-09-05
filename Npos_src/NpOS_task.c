@@ -1,5 +1,5 @@
 #include "../Npos_inc/NpOS.h"
-// #include "../Npos_cpu/systick.h"
+
 #include "string.h"
 #include "stdio.h"
 
@@ -213,7 +213,6 @@ task_funcsta NpOS_task_pendTask(Np_TCB* tcb){
 
 /**
     \brief  ready a task
-            BUG:对正在pend延时的任务使用这个函数会导致意料之外的错误
     \param[in]  Np_TCB* tcb  任务所属的任务控制块的指针
     \retval task_funcsta 返回任务的执行情况
 */
@@ -298,7 +297,6 @@ void NpOS_task_schedul(){
 */
 void NpOS_Start(){
     gp_currentTcb = g_TcbList.taskReadyList[0].taskNode;
-    // printf("%d,%d,%d\n",g_TcbList.taskReadyflag1,g_TcbList.taskReadyflag2[0],g_TcbList.taskReadyflag2[1]);
     System_tickInit();
     root_task_entry(gp_currentTcb);
 }
@@ -400,9 +398,6 @@ void npos_task_setTaskReadyFlag(Np_TCB* tcb){
 #elif NPOS_TASK_PRIORITY_NUMBER>=NPOS_TASK_PRIORITY_NUMBER_128
     g_TcbList.taskReadyflag1 |= (0x1 << (tcb->taskPriority/64));
     g_TcbList.taskReadyflag2[tcb->taskPriority/64] |= (0x1 << (tcb->taskPriority%64)/8);
-    // g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[0x1 << (tcb->taskPriority/64)]] |= (0x1 << (tcb->taskPriority/8%8));
-    // (c_taskPrioMask2Prio[0x1 << (tcb->taskPriority/64)]*8)+(c_taskPrioMask2Prio[0x1 << (tcb->taskPriority%64/8)])
-    // g_TcbList.taskReadyflag3[(c_taskPrioMask2Prio[0x1 << (tcb->taskPriority/64)]*8)+(c_taskPrioMask2Prio[0x1 << (tcb->taskPriority%64/8)])] |= (0x1 << (tcb->taskPriority%64)%8);
     g_TcbList.taskReadyflag3[tcb->taskPriority/8] |= (0x1 << (tcb->taskPriority%8));
 #endif
 
@@ -420,20 +415,14 @@ void npos_task_clearTaskReadyFlag(Np_TCB* tcb){
     g_TcbList.taskReadyflag &= ~( 0x1 << (tcb->taskPriority));
 
 #elif NPOS_TASK_PRIORITY_NUMBER <= NPOS_TASK_PRIORITY_NUMBER_64 && NPOS_TASK_PRIORITY_NUMBER > NPOS_TASK_PRIORITY_NUMBER_8
-    // g_TcbList.taskReadyflag1 |= (0x1 << (tcb->taskPriority/8));
-    // g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[(0x1 << (tcb->taskPriority/8))]] &= ~(0x1 << (tcb->taskPriority%8));
     g_TcbList.taskReadyflag2[tcb->taskPriority/8] &= ~(uint8_t)(0x1 << (tcb->taskPriority%8));
     if(g_TcbList.taskReadyflag2[tcb->taskPriority/8] == 0){
         g_TcbList.taskReadyflag1 &= ~(uint8_t)(0x1 << (tcb->taskPriority/8));
     }
-    printf("%d,%d,%d\n",g_TcbList.taskReadyflag1,g_TcbList.taskReadyflag2[0],g_TcbList.taskReadyflag2[1]);
 
 #elif NPOS_TASK_PRIORITY_NUMBER>=NPOS_TASK_PRIORITY_NUMBER_128
-    // g_TcbList.taskReadyflag1 |= (0x1 << (tcb->taskPriority/64));
-    // g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[tcb->taskPriority/64]] |= (0x1 << (tcb->taskPriority%64/8));
-    // g_TcbList.taskReadyflag3[(c_taskPrioMask2Prio[0x1 << (tcb->taskPriority/64)]*8)+(c_taskPrioMask2Prio[0x1 << (tcb->taskPriority%64/8)])] &= ~(0x1 << (tcb->taskPriority%64)%8);
+    
     g_TcbList.taskReadyflag3[tcb->taskPriority/8] &= ~(0x1 << (tcb->taskPriority%8));
-    // g_TcbList.taskReadyflag3[c_taskPrioMask2Prio[tcb->taskPriority%64/8]] &= ~(0x1 << (tcb->taskPriority%64%8));
 
     if(g_TcbList.taskReadyflag3[tcb->taskPriority/8] == 0){
         g_TcbList.taskReadyflag2[tcb->taskPriority/64] &= ~(0x1 << (tcb->taskPriority%64)/8);
@@ -616,12 +605,10 @@ void npos_get_highest_priority(){
 #elif NPOS_TASK_PRIORITY_NUMBER <= NPOS_TASK_PRIORITY_NUMBER_64 && NPOS_TASK_PRIORITY_NUMBER > NPOS_TASK_PRIORITY_NUMBER_8
     l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]*8+
                     c_taskPrioMask2Prio[g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]]];
-    // l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyflag2[0]];
-    // printf("%d\n",l_highestPri);
+
     
     lp_nexttcb = g_TcbList.taskReadyList[l_highestPri].taskNode;
-    // if(gp_currentTcb == lp_nexttcb) return;
-    // else 
+
     gp_currentTcb = lp_nexttcb;
 
 #elif NPOS_TASK_PRIORITY_NUMBER>=NPOS_TASK_PRIORITY_NUMBER_128
@@ -629,7 +616,6 @@ void npos_get_highest_priority(){
                     c_taskPrioMask2Prio[g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]]]*8+
                     c_taskPrioMask2Prio[g_TcbList.taskReadyflag3[c_taskPrioMask2Prio[g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]]]]];
     lp_nexttcb = g_TcbList.taskReadyList[l_highestPri].taskNode;
-    printf("%d\n",l_highestPri);
     gp_currentTcb = lp_nexttcb;
 
 #endif
