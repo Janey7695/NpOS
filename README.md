@@ -8,8 +8,6 @@ a simple Embedded Real-Time Operating System
 
 `NpOS`以运行在RISC-V架构芯片上的完整的嵌入式实时操作系统为目标。目前可以进行基于抢占优先级的调度，实现多任务。课余时间的小实践。
 
-<img src=".\readme_img\Npos系统框架.png" alt="Npos系统框架" style="zoom:75%;" />
-
 ## NpOS
 
 * 抢占式调度以保证实时性
@@ -37,6 +35,8 @@ git clone https://github.com/Janey7695/NpOS.git
 | Npos_src | Npos内核文件的源文件             |
 
 ### 使用方法
+#### 详细的函数说明
+请见[user_guide](./npos_user_guide.md)
 
 #### 使用platformIO
 
@@ -88,7 +88,9 @@ int main(void)
 }
 ```
 
-## 框架 todo
+## 框架
+
+<img src=".\readme_img\Npos系统框架.png" alt="Npos系统框架" style="zoom:75%;" />
 
 ## TODO
 
