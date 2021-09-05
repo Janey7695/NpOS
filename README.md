@@ -1,6 +1,6 @@
 <img src=".\readme_img\Npos图标.png" alt="Npos图标" style="zoom:75%;" />
 
-# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.4.6 (shields.io)](https://img.shields.io/badge/version-1.4.6-brightgreen)
+# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.5.0 (shields.io)](https://img.shields.io/badge/version-1.5.0-brightgreen)
 
 a simple Embedded Real-Time Operating System
 
@@ -101,7 +101,7 @@ int main(void)
 
 ## ChangeLog
 
-### [1.5.0] 2021-9-5 10:02
+### [1.5.0] 2021-9-5
 
 #### Added
  - 增加任务优先级到最多64个
