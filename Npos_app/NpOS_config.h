@@ -1,18 +1,15 @@
 #ifndef NPOS_CONFIG_H
 #define NPOS_CONFIG_H
-
-//user can config 用户更改区
+/*******************user can config 用户更改区********************/
 /*           OS config            */
 
 //系统心跳 每个tick的时间间隔
 #define NPOS_SchedulingInterval_MS  5
 
 //是否启用系统信息打印
-#define NPOS_logInfoPrintf_EN       0
-
+#define NPOS_logInfoPrintf_EN       1
 
 /*           Task               */
-
 
 // 是否启用idle任务来统计cpu的利用率
 #define NPOS_TASK_IDLE_USAGERATE_EN 0
@@ -28,12 +25,16 @@
 #define NPOS_TASK_PRIORITY_NUMBER_256       256
 
 //在这里填写对应数量级的宏
-#define NPOS_TASK_PRIORITY_NUMBER   NPOS_TASK_PRIORITY_NUMBER_8
+#define NPOS_TASK_PRIORITY_NUMBER   NPOS_TASK_PRIORITY_NUMBER_64
+
+/*           Object               */
+//是否使用消息功能
+#define NPOS_OBJ_MESSAGE_EN         0
 
 
-//system config 非用户更改区
+/*******************system config 非用户更改区********************/
 
-/************* Task ********************/
+/*           Task               */
 
 // 单个任务最小需要的堆栈大小
 #define NPOS_TASK_MIN_STACKSIZE     4*32+16

@@ -1,6 +1,6 @@
 [TOC]
 
-<img src="D:\Notes\img_src\Npos图标.png" alt="Npos图标" style="zoom:75%;" />
+<img src=".\readme_img\Npos图标.png" alt="Npos图标" style="zoom:75%;" />
 
 # 简介 Introduction
 
@@ -16,6 +16,8 @@
 
 - 创建最多64个优先级（1.5版本之后才增加到64，1.5之前的版本只有8个优先级）
 - 基于优先级的抢占式调度器
+- 慢慢添加的组件与内核功能...
+  - message
 
 
 
@@ -61,6 +63,18 @@
 修改`#define NPOS_TASK_PRIORITY_NUMBER   NPOS_TASK_PRIORITY_NUMBER_8`后面的`NPOS_TASK_PRIORITY_NUMBER_8`即可改变系统可以支持的优先级数
 
 > 不论如何，系统都保留一个最低优先级，不开放给用户使用！（其实你非要用也没差，只是那个优先级我拿来放空闲任务了而已）
+
+## 对象 object
+
+通过修改以下宏的值，来进行内核功能的裁剪。 1为使用 0为不使用
+
+```c
+/*           Object               */
+//是否使用消息功能
+#define NPOS_OBJ_MESSAGE_EN         0
+```
+
+
 
 # API说明 API reference
 
@@ -306,4 +320,133 @@ void task(){
 ```
 
 > 使用这个函数会主动触发一次任务调度
+
+
+
+## 消息 MESSAGE
+
+### 相关定义 Related definitions 
+
+- `Np_MSG` 描述消息的结构体
+
+### 相关函数 Related functions
+
+#### 创建（初始化）一个消息体
+
+```c
+task_funcsta NpOS_obj_createMsg(Np_MSG* msg);
+```
+
+作用：实际上是初始化一个`Np_MSG`结构体
+
+作用区间：创建可以在任何时候创建，但发送与接收消息必须在进入操作系统环境之后使用
+
+参数：
+
+1. *\param**[**in**]* *Np_MSG*** msg 要初始化的消息体*
+
+返回值：
+
+1. *\retval* *task_funcsta 返回任务的执行情况*
+
+使用范例：
+
+```c
+Np_MSG messageExample;
+
+void task1(){
+    uint8_t character;
+    while(1){
+        character = 'A';
+        NpOS_obj_createMsg(&messageExample);
+        NpOS_obj_sendMsgtoTask(&messageExample,&anotherTaskTcb,&character);
+    }
+}
+```
+
+> 消息结构体需要在参与通信的任务都可以访问到的地方声明（比如直接声明为全局变量）
+
+#### 发送消息至 _指定_ 任务
+
+```c
+task_funcsta NpOS_obj_sendMsgtoTask(Np_MSG* msg,
+                                    Np_TCB* receivertcb,
+                                    void* p_msg);
+```
+
+作用：发送消息到指定的一个任务。
+
+作用区间：当进入系统环境后，即调用了`NpOS_Start()`之后
+
+参数：
+
+1. *\param**[**in**]* *Np_MSG*** msg 承载消息的结构体*
+2. *\param**[**in**]* *Np_TCB*** receivertcb消息的接收者，用以核验消息的收发正确性*
+3. *\param**[**in**]* *void*** p_msg 消息所携带的信息的指针*
+
+返回值：
+
+1. *\retval* *task_funcsta 返回任务的执行情况*
+
+使用范例：
+
+```c
+Np_MSG messageExample;
+
+void task1(){
+    uint8_t character;
+    while(1){
+        character = 'A';
+        NpOS_obj_createMsg(&messageExample);
+        NpOS_obj_sendMsgtoTask(&messageExample,&anotherTaskTcb,&character);
+    }
+}
+```
+
+> 使用这个函数会主动触发一次任务调度
+
+#### 等待接收一个来自指定任务的消息
+
+```c
+task_funcsta NpOS_obj_receiveMsgFromTask(Np_MSG* msg,
+                                         Np_TCB* sendertcb);
+```
+
+作用：等待接收一个来自指定任务的消息
+
+作用区间：当进入系统环境后，即调用了`NpOS_Start()`之后
+
+参数：
+
+1. *\param**[**in**]* *Np_MSG*** msg 承载消息的结构体*
+2. *\param**[**in**]* *Np_TCB*** sendertcb 消息的发送者，用以核验消息的收发正确性*
+
+返回值：
+
+1. *\retval* *task_funcsta 返回任务的执行情况*
+
+使用范例：
+
+```c
+Np_MSG messageExample;
+
+void task1(){
+    uint8_t character;
+    while(1){
+        character = 'A';
+        NpOS_obj_createMsg(&messageExample);
+        NpOS_obj_sendMsgtoTask(&messageExample,&task2_tcb,&character);
+    }
+}
+
+
+void task2(){
+    while(1){
+        NpOS_obj_receiveMsgFromTask(&messageExample,&task1_tcb);
+        printf("you receive a character : %s \n",*(uint8_t)(messageExample.p_message));
+    }
+}
+```
+
+> 使用这个函数会让当前任务持续等待消息的到来，如果没有等来消息，任务会暂时进入wait态，直到消息到来。
 

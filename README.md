@@ -1,6 +1,6 @@
 <img src=".\readme_img\Npos图标.png" alt="Npos图标" style="zoom:75%;" />
 
-# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.5.0 (shields.io)](https://img.shields.io/badge/version-1.5.0-brightgreen)
+# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.6.0 (shields.io)](https://img.shields.io/badge/version-1.6.0-brightgreen)
 
 a simple Embedded Real-Time Operating System
 
@@ -15,6 +15,8 @@ a simple Embedded Real-Time Operating System
 * 目前最高支持64优先级
   * 最低优先级保留
 * 可裁剪式内核，可以减少至仅剩一个任务调度核心
+  * 抢占式调度内核
+  * OBJ_message
 
 ## 使用
 
@@ -36,7 +38,8 @@ git clone https://github.com/Janey7695/NpOS.git
 
 ### 使用方法
 #### 详细的函数说明
-请见[user_guide](./npos_user_guide.md)
+请见[user_guide](./npos_user_guide.md)(用这个链接查看的话目录无法显示)  
+__推荐下载代码后，浏览器打开`npos_user_guide.html`以获得更好的阅读体验~__
 
 #### 使用platformIO
 
@@ -103,10 +106,15 @@ int main(void)
 
 ## ChangeLog
 
-### [1.5.0] 2021-9-5
+### [1.6.0] - 2021-9-6
 
 #### Added
- - 增加任务优先级到最多64个
+- 新增object之 消息 message
+
+### [1.5.0] - 2021-9-5
+
+#### Added
+- 增加任务优先级到最多64个
 
 ### [1.4.6] - 2021-08-30
 

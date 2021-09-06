@@ -52,6 +52,10 @@ typedef struct tcblist
     Np_tasklist taskReadyList[NPOS_TASK_PRIORITY_NUMBER];
     Np_TCB* taskPendList;
 
+#if NPOS_OBJ_MESSAGE_EN
+    Np_TCB* taskWaitList;
+#endif
+
 #if NPOS_TASK_PRIORITY_NUMBER == NPOS_TASK_PRIORITY_NUMBER_8
     TASK_PRIORITY_TYPE taskReadyflag;
 #elif NPOS_TASK_PRIORITY_NUMBER <= NPOS_TASK_PRIORITY_NUMBER_64 && NPOS_TASK_PRIORITY_NUMBER > NPOS_TASK_PRIORITY_NUMBER_8
@@ -85,5 +89,15 @@ void NpOS_task_pendDelayTicks(uint32_t ticks);
 void NpOS_roottask();
 void NpOS_Start();
 void NpOS_task_startSchedul();
+void npos_task_setTaskReadyFlag(Np_TCB* tcb);
+void npos_task_clearTaskReadyFlag(Np_TCB* tcb);
+task_funcsta npos_task_insertIntotaskReadyList(
+                        Np_TCB* _tcb,
+                        TASK_PRIORITY_TYPE _taskpri
+                        );
+Np_TCB* npos_task_deleteFromtaskReadyList(
+                        Np_TCB* _tcb,
+                        TASK_PRIORITY_TYPE _taskpri
+                        );
 
 #endif // !NPOS_TASK_H

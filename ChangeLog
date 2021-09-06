@@ -24,3 +24,8 @@ Fixed
 
 Added
  - 增加任务优先级到最多64个
+
+[1.6.0] 2021-9-6 20:04
+
+Added
+ - 新增object之 消息 message

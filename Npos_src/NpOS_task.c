@@ -1,5 +1,5 @@
 #include "../Npos_inc/NpOS.h"
-
+// #include "../Npos_cpu/systick.h"
 #include "string.h"
 #include "stdio.h"
 
@@ -7,6 +7,9 @@ Np_tcblist g_TcbList;
 Np_TCB* gp_currentTcb;
 Np_TCB* lp_circleTcb;
 Np_TCB l_pendListRootNode;
+#if NPOS_OBJ_MESSAGE_EN
+Np_TCB l_waitListRootNode;
+#endif 
 
 //空闲任务相关
 #define idleTask_StackSize  1024
@@ -135,8 +138,7 @@ task_funcsta NpOS_task_createTask(
         return Exc_ERROR;
     }
 
-    
-    
+
     npos_sp_init(tcb,stackbut,stacksize);
 
     if(!npos_task_insertIntotaskReadyList(tcb,taskpri))
@@ -213,6 +215,7 @@ task_funcsta NpOS_task_pendTask(Np_TCB* tcb){
 
 /**
     \brief  ready a task
+            BUG:对正在pend延时的任务使用这个函数会导致意料之外的错误
     \param[in]  Np_TCB* tcb  任务所属的任务控制块的指针
     \retval task_funcsta 返回任务的执行情况
 */
@@ -419,7 +422,6 @@ void npos_task_clearTaskReadyFlag(Np_TCB* tcb){
     if(g_TcbList.taskReadyflag2[tcb->taskPriority/8] == 0){
         g_TcbList.taskReadyflag1 &= ~(uint8_t)(0x1 << (tcb->taskPriority/8));
     }
-
 #elif NPOS_TASK_PRIORITY_NUMBER>=NPOS_TASK_PRIORITY_NUMBER_128
     
     g_TcbList.taskReadyflag3[tcb->taskPriority/8] &= ~(0x1 << (tcb->taskPriority%8));
@@ -443,6 +445,10 @@ void npos_task_clearTaskReadyFlag(Np_TCB* tcb){
 void npos_task_lpendListInit(){
     l_pendListRootNode.p_nextTcb = NULL;
     l_pendListRootNode.p_lastTcb = &l_pendListRootNode;
+#if NPOS_OBJ_MESSAGE_EN
+    l_waitListRootNode.p_nextTcb = NULL;
+    l_waitListRootNode.p_lastTcb = &l_waitListRootNode;
+#endif 
 }
 
 /**
@@ -455,6 +461,10 @@ void npos_task_gTcbListInit(){
         g_TcbList.taskReadyList[i].taskNode = NULL;
     }
     g_TcbList.taskPendList = &l_pendListRootNode;
+#if NPOS_OBJ_MESSAGE_EN
+    Np_TCB l_waitListRootNode;
+    g_TcbList.taskWaitList = &l_waitListRootNode;
+#endif
 
 #if NPOS_TASK_PRIORITY_NUMBER == NPOS_TASK_PRIORITY_NUMBER_8
     g_TcbList.taskReadyflag = 0;
@@ -606,7 +616,6 @@ void npos_get_highest_priority(){
     l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]*8+
                     c_taskPrioMask2Prio[g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]]];
 
-    
     lp_nexttcb = g_TcbList.taskReadyList[l_highestPri].taskNode;
 
     gp_currentTcb = lp_nexttcb;
