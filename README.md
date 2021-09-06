@@ -1,6 +1,6 @@
 <img src=".\readme_img\Npos图标.png" alt="Npos图标" style="zoom:75%;" />
 
-# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.6.0 (shields.io)](https://img.shields.io/badge/version-1.6.0-brightgreen)
+# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.6.1 (shields.io)](https://img.shields.io/badge/version-1.6.1-brightgreen)
 
 a simple Embedded Real-Time Operating System
 

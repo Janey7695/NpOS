@@ -29,3 +29,8 @@ Added
 
 Added
  - 新增object之 消息 message
+
+[1.6.1] 2021-9-6 22:01
+
+Fixed
+ - 修复 NpOS_obj_receiveMsgFromTask 的 bug ，该bug导致同一条消息，会被错误的接收2次

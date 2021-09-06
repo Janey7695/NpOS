@@ -66,21 +66,17 @@ task_funcsta NpOS_obj_createMsg(Np_MSG* msg){
 */
 task_funcsta NpOS_obj_receiveMsgFromTask(Np_MSG* msg,Np_TCB* sendertcb){
     NpOS_ENTER_CRITICAL();
-    if(msg->messageStatu == MESSAGE_FULL && sendertcb == msg->senderTcb && msg->receiverTcb == gp_currentTcb){
-        LOG_OK("System","receive a message from another task");
-        msg->messageStatu = MESSAGE_EMPTY;
+
+    while(msg->messageStatu == MESSAGE_EMPTY){
+        LOG_WARING("System","waiting a message from another task");
+        gp_currentTcb->taskStatus = TASK_WAIT;
+        npos_task_deleteFromtaskReadyList(gp_currentTcb,gp_currentTcb->taskPriority);
+        npos_insertIntoWaitList(gp_currentTcb);
+        npos_task_clearTaskReadyFlag(gp_currentTcb);
         NpOS_EXIT_CRITICAL();
-        return Exc_OK;
+        NpOS_task_startSchedul();
     }
 
-    LOG_WARING("System","waiting a message from another task");
-    gp_currentTcb->taskStatus = TASK_WAIT;
-    npos_task_deleteFromtaskReadyList(gp_currentTcb,gp_currentTcb->taskPriority);
-    npos_insertIntoWaitList(gp_currentTcb);
-    npos_task_clearTaskReadyFlag(gp_currentTcb);
-    NpOS_EXIT_CRITICAL();
-    NpOS_task_startSchedul();
-    
     if(msg->messageStatu == MESSAGE_FULL && sendertcb == msg->senderTcb && msg->receiverTcb == gp_currentTcb){
         LOG_OK("System","receive a message from another task");
         msg->messageStatu = MESSAGE_EMPTY;
@@ -118,5 +114,6 @@ task_funcsta NpOS_obj_sendMsgtoTask(Np_MSG* msg,Np_TCB* receivertcb,void* p_msg)
         return Exc_OK;
     }
     NpOS_EXIT_CRITICAL();
+    NpOS_task_startSchedul();
     return Exc_OK;
 }
