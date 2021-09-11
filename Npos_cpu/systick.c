@@ -8,7 +8,7 @@
     \retval none
 */
 uint32_t g_npos_systime_Ticks;
-
+uint64_t g_npos_systemRunTimeCount;
 void System_tickInit(){
     
 
@@ -30,10 +30,14 @@ void System_tickInit(){
     TIMER_WRITE_REG(TIMER_MTIME+4) = 0x0;
 
     g_npos_systime_Ticks = 0;
-    
+    g_npos_systemRunTimeCount=0;
 }
 
 uint32_t get_sys_ticks(){
     return g_npos_systime_Ticks;
+}
+
+uint32_t get_sys_runtime(){
+    return g_npos_systemRunTimeCount/27000;
 }
 

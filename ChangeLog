@@ -34,3 +34,8 @@ Added
 
 Fixed
  - 修复 NpOS_obj_receiveMsgFromTask 的 bug ，该bug导致同一条消息，会被错误的接收2次
+
+[1.7.0] 2021-9-11 21:31
+
+Added
+ - 新增任务runtime统计功能，以及空闲任务可以用以粗略计算cpu利用率

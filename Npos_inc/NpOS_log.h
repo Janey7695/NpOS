@@ -29,7 +29,7 @@
 #define pCLEAR                  "\e[2J"          //清除
 #define pCLRLINE               "\r\e[K"          //清除行
 
-#define _TIME_  NPOS_SchedulingInterval_MS*get_sys_ticks()
+#define _TIME_  get_sys_runtime()
 
 #define LOG_ERR(who,content)    printf("[%ld]  [%s]["pRED "ERROR"pNONE"]: %s. \n",_TIME_,who,content)
 #define LOG_OK(who,content)    printf("[%ld]  [%s]["pGREEN "OK"pNONE"]: %s. \n",_TIME_,who,content)

@@ -1,6 +1,6 @@
 <img src=".\readme_img\Npos图标.png" alt="Npos图标" style="zoom:75%;" />
 
-# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.6.1 (shields.io)](https://img.shields.io/badge/version-1.6.1-brightgreen)
+# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.7.0 (shields.io)](https://img.shields.io/badge/version-1.7.0-brightgreen)
 
 a simple Embedded Real-Time Operating System
 
@@ -10,7 +10,7 @@ a simple Embedded Real-Time Operating System
 
 ## NpOS
 
-* 抢占式调度以保证实时性
+* 抢占式调度以尽量实现实时性
 
 * 目前最高支持64优先级
   * 最低优先级保留
@@ -105,6 +105,14 @@ int main(void)
   - [ ] 文件系统
 
 ## ChangeLog
+
+### [1.7.0] - 2021-9-11
+
+#### Added
+- 新增任务runtime统计功能，以及空闲任务可以用以粗略计算cpu利用率
+- 现在任务的一般最小延时还是一个系统Tick，但是对单个任务的运行时间可以计算到us级别
+#### Fixed
+- 修复 NpOS_obj_receiveMsgFromTask 的 bug ，该bug导致同一条消息，会被错误的接收2次
 
 ### [1.6.0] - 2021-9-6
 

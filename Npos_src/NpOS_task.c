@@ -12,7 +12,11 @@ Np_TCB l_waitListRootNode;
 #endif 
 
 //空闲任务相关
+#if NPOS_TASK_USAGERATE_EN && NPOS_TASK_CPUUSAGE_RATE_EN
 #define idleTask_StackSize  1024
+#else
+#define idleTask_StackSize  256+64
+#endif
 TASK_STACK_TYPE idleTask_Stack[idleTask_StackSize];
 Np_TCB idleTask_Tcb;
 void idleTask(void);
@@ -143,6 +147,11 @@ task_funcsta NpOS_task_createTask(
 
     if(!npos_task_insertIntotaskReadyList(tcb,taskpri))
         return Exc_ERROR;
+
+
+#if NPOS_TASK_USAGERATE_EN
+    tcb->taskRunTimeCount = 0;
+#endif
 
     LOG_OK("system","task create successfully");
     return Exc_OK;
@@ -315,6 +324,10 @@ void eclic_mtip_handler(){
     context_save();
 
     g_npos_systime_Ticks += 1;
+    g_npos_systemRunTimeCount+=27000*NPOS_SchedulingInterval_MS;
+#if NPOS_TASK_USAGERATE_EN
+    gp_currentTcb->taskRunTimeCount+=27000*NPOS_SchedulingInterval_MS;
+#endif
     npos_taskpendTick_dec();
     
     NpOS_task_schedul();
@@ -331,6 +344,11 @@ void eclic_mtip_handler(){
 */
 void eclic_msip_handler(){
     context_save();
+
+    g_npos_systemRunTimeCount+=TIMER_WRITE_REG(TIMER_MSIP);
+#if NPOS_TASK_USAGERATE_EN
+    gp_currentTcb->taskRunTimeCount+=TIMER_WRITE_REG(TIMER_MSIP);
+#endif
     NpOS_task_schedul();
     TIMER_WRITE_REG(TIMER_MSIP) = 0;
 }
@@ -341,45 +359,18 @@ void eclic_msip_handler(){
     \retval none
 */
 void idleTask(){
-    #if NPOS_TASK_IDLE_USAGERATE_EN
-
-    uint8_t lo_iftheFirstTimeCountExc;
-    lo_iftheFirstTimeCountExc = 1;
-    uint32_t l_excTimes,l_SecStartTime,l_excTimesPerSec;
-    l_excTimes = 0;
-    l_excTimesPerSec=0xffffffff;
-    l_SecStartTime = get_sys_ticks()*NPOS_SchedulingInterval_MS;
-    uint8_t l_usageRate;
-
+    #if NPOS_TASK_USAGERATE_EN
+    float l_cpuUsageRate = 0.0;
     #endif
 
     while(1){
-        #if NPOS_TASK_IDLE_USAGERATE_EN
         
-        l_excTimes += 1;
-
-        if(NPOS_SchedulingInterval_MS*get_sys_ticks() - l_SecStartTime > 1000)
-        {
-            
-            if(lo_iftheFirstTimeCountExc){
-                NpOS_ENTER_CRITICAL();
-                l_excTimesPerSec = l_excTimes;
-                lo_iftheFirstTimeCountExc = 0;
-                NpOS_EXIT_CRITICAL();
-            }
-            
-            NpOS_ENTER_CRITICAL();
-            printf("l_excTimes is %d,l_excTimesPerSec is %d",l_excTimes,l_excTimesPerSec);
-            l_usageRate = 100-l_excTimes*100/l_excTimesPerSec;
-            l_SecStartTime = NPOS_SchedulingInterval_MS*(get_sys_ticks()+1);
-            l_excTimes = 0;
-            printf("[%ld]  [cpu][normal]: Now CPU usage is %.d %%. \n",NPOS_SchedulingInterval_MS*get_sys_ticks(),l_usageRate);
-            NpOS_EXIT_CRITICAL();
-            TIMER_WRITE_REG(TIMER_MTIMECMP) = 27000*NPOS_SchedulingInterval_MS;
-        }
-
-        #endif
+        #if NPOS_TASK_USAGERATE_EN && NPOS_TASK_CPUUSAGE_RATE_EN
         LOG_INFO("idle task","idle task run ...");
+        l_cpuUsageRate = 100.0 - gp_currentTcb->taskRunTimeCount*100.0/g_npos_systemRunTimeCount;
+        printf("cpu usage rate is about : %.1f %% \n",l_cpuUsageRate);
+        #endif
+        
     }
 
 }

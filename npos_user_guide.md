@@ -41,9 +41,19 @@
 
 ## 任务 Task
 
-### 空闲任务 idle task
+### 任务运行时间 task runTime
 
-`\#define NPOS_TASK_IDLE_USAGERATE_EN 0` 0为启用空闲任务来做一个cpu利用率统计，1为不启用（其实这个功能根本还没做 T^T）
+`#define NPOS_TASK_USAGERATE_EN 0` 1为启用任务运行时长的记录，0为不启用。单个任务的运行时间被保存在任务的tcb中
+
+### cpu利用率统计 cpu usage rate
+
+`\#define NPOS_TASK_CPUUSAGE_RATE_EN 0` 1为启用，0为不启用.
+
+该宏会在idle task中打印输出cpu的__累计__利用率.
+
+> 使用cpu利用率统计的前提是 任务运行时间 task runTime 功能被启用，即`#define NPOS_TASK_USAGERATE_EN 1`
+>
+> 输出的利用率是累计利用率，而不是平均时刻利用率！
 
 ### 任务优先级数量 task priority number
 
