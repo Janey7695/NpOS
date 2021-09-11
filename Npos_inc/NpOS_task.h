@@ -40,6 +40,11 @@ typedef struct tcb
     //任务链表的上一个
     struct tcb* p_lastTcb;
 
+#if NPOS_TASK_USAGERATE_EN
+    //任务总的运行时间数
+    uint64_t taskRunTimeCount;
+#endif
+
 }Np_TCB;
 
 typedef struct tcbb
