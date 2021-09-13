@@ -39,7 +39,7 @@ git clone https://github.com/Janey7695/NpOS.git
 ### 使用方法
 #### 详细的函数说明
 请见[user_guide](./npos_user_guide.md)(用这个链接查看的话目录无法显示)  
-__推荐下载代码后，浏览器打开`npos_user_guide.html`以获得更好的阅读体验~__
+__推荐下载代码后，打开`npos_user_guide.pdf`以获得更好的阅读体验~__
 
 #### 使用platformIO
 
