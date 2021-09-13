@@ -23,7 +23,7 @@
 
 # 配置 Config
 
-所有跟系统相关的配置都在NpOS_config.h中，修改其中的宏定义即可对Npos进行裁剪修改
+所有跟给用户配置的系统相关的配置都在NpOS_config_user.h中，修改其中的宏定义即可对Npos进行裁剪修改
 
 ## 系统 System
 

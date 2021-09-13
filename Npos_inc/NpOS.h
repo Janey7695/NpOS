@@ -1,7 +1,7 @@
 #ifndef NPOS_H
 #define NPOS_H
 
-#include "../Npos_app/NpOS_config.h"
+#include "./NpOS_config.h"
 #include "./NpOS_task.h"
 #include "./NpOS_log.h"
 #if NPOS_OBJ_MESSAGE_EN
@@ -17,7 +17,7 @@
 
 
 #define OS_NAME      "Not_Popular Real-Time Operate System"
-#define OS_VERSION    "1.7.0"
+#define OS_VERSION    "1.7.1"
 #define OS_RELEASED   "2021-8-25"
 #define OS_DESIGNED    "JaneyXu"
 
