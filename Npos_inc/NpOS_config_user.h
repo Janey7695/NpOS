@@ -15,6 +15,8 @@
 #define NPOS_TASK_USAGERATE_EN 0
 // 是否启用idle任务来统计cpu的利用率
 #define NPOS_TASK_CPUUSAGE_RATE_EN 0
+// 是否启用同优先级时间片轮转调度
+#define NPOS_TASK_TIMESLICE_SCHEDUL_EN 0
 
 // 允许的最多优先级数量
 #define NPOS_TASK_PRIORITY_NUMBER_8         8

@@ -372,7 +372,6 @@ void idleTask(){
         #endif
         
     }
-
 }
 
 /**
@@ -475,8 +474,12 @@ void npos_task_gTcbListInit(){
     }
     g_TcbList.taskReadyflag1 = 0;
 
-
 #endif
+
+#if NPOS_TASK_TIMESLICE_SCHEDUL_EN
+    g_TcbList.perTaskPriority = TASK_SYSTEMKEEP_LOWEST_PRIORITY;
+#endif
+
 }
 
 /**
@@ -502,24 +505,42 @@ task_funcsta npos_task_insertIntotaskReadyList(
 
     if(g_TcbList.taskReadyList[TASK_SYSTEMKEEP_LOWEST_PRIORITY].taskNode == NULL){
         g_TcbList.taskReadyList[TASK_SYSTEMKEEP_LOWEST_PRIORITY].taskNode = _tcb;
-        _tcb->p_nextTcb = g_TcbList.taskReadyList[TASK_SYSTEMKEEP_LOWEST_PRIORITY].taskNode;
+        _tcb->p_nextTcb = NULL;
+        _tcb->p_lastTcb = g_TcbList.taskReadyList[TASK_SYSTEMKEEP_LOWEST_PRIORITY].taskNode;
     }
     else{
+
+#if NPOS_TASK_TIMESLICE_SCHEDUL_EN
         if(g_TcbList.taskReadyList[_taskpri].taskNode==NULL){
             g_TcbList.taskReadyList[_taskpri].taskNode = _tcb;
             _tcb->p_nextTcb = NULL;
             _tcb->p_lastTcb = _tcb;
+            return Exc_OK;
         }
 
         Np_TCB* lp_perNdoe;
         lp_perNdoe = g_TcbList.taskReadyList[_taskpri].taskNode;
+        lp_perNdoe->p_lastTcb = _tcb;
         while(lp_perNdoe->p_nextTcb != NULL){
             lp_perNdoe = lp_perNdoe->p_nextTcb;
         }
         lp_perNdoe->p_nextTcb = _tcb;
         _tcb->p_lastTcb = lp_perNdoe;
         _tcb->p_nextTcb = NULL;
+#else
+        if(g_TcbList.taskReadyList[_taskpri].taskNode==NULL){
+            g_TcbList.taskReadyList[_taskpri].taskNode = _tcb;
+            _tcb->p_nextTcb = NULL;
+            _tcb->p_lastTcb = _tcb;
+            return Exc_OK;
+        }
+        else{
+            LOG_ERR("system","One Task Priority Can Only bind one task!(You can change this by set 'NPOS_TASK_TIMESLICE_SCHEDUL_EN')");
+            return Exc_ERROR;
+        }
+#endif
         
+
     }
     return Exc_OK;
 }
@@ -537,8 +558,13 @@ Np_TCB* npos_task_deleteFromtaskReadyList(
     Np_TCB* lp_perNdoe;
     lp_perNdoe = g_TcbList.taskReadyList[_taskpri].taskNode;
     if(lp_perNdoe == _tcb){
-        lp_perNdoe = lp_perNdoe->p_nextTcb;
-        if(lp_perNdoe!=NULL)    lp_perNdoe->p_lastTcb = lp_perNdoe;
+        if(lp_perNdoe->p_nextTcb!=NULL){
+            lp_perNdoe->p_nextTcb->p_lastTcb = lp_perNdoe->p_lastTcb;
+            g_TcbList.taskReadyList[_taskpri].taskNode = lp_perNdoe->p_nextTcb;
+        }
+        else{
+            g_TcbList.taskReadyList[_taskpri].taskNode = NULL;
+        }
         _tcb->p_nextTcb = NULL;
         return _tcb;
     }
@@ -601,7 +627,7 @@ void npos_get_highest_priority(){
 #if NPOS_TASK_PRIORITY_NUMBER == NPOS_TASK_PRIORITY_NUMBER_8
     l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyflag];
     lp_nexttcb = g_TcbList.taskReadyList[l_highestPri].taskNode;
-    gp_currentTcb = lp_nexttcb;
+    // gp_currentTcb = lp_nexttcb;
 
 #elif NPOS_TASK_PRIORITY_NUMBER <= NPOS_TASK_PRIORITY_NUMBER_64 && NPOS_TASK_PRIORITY_NUMBER > NPOS_TASK_PRIORITY_NUMBER_8
     l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]*8+
@@ -609,17 +635,29 @@ void npos_get_highest_priority(){
 
     lp_nexttcb = g_TcbList.taskReadyList[l_highestPri].taskNode;
 
-    gp_currentTcb = lp_nexttcb;
+    // gp_currentTcb = lp_nexttcb;
 
 #elif NPOS_TASK_PRIORITY_NUMBER>=NPOS_TASK_PRIORITY_NUMBER_128
     l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]*64+
                     c_taskPrioMask2Prio[g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]]]*8+
                     c_taskPrioMask2Prio[g_TcbList.taskReadyflag3[c_taskPrioMask2Prio[g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]]]]];
     lp_nexttcb = g_TcbList.taskReadyList[l_highestPri].taskNode;
-    gp_currentTcb = lp_nexttcb;
+    // gp_currentTcb = lp_nexttcb;
 
 #endif
 
+#if NPOS_TASK_TIMESLICE_SCHEDUL_EN
+    if(g_TcbList.perTaskPriority == l_highestPri){
+        gp_currentTcb = gp_currentTcb->p_lastTcb;
+    }
+    else{
+        gp_currentTcb = lp_nexttcb;
+        g_TcbList.perTaskPriority = l_highestPri;
+    }
+
+#else
+    gp_currentTcb = lp_nexttcb;
+#endif
 
     NpOS_EXIT_CRITICAL();
 }

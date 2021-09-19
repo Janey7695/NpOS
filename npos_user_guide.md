@@ -41,6 +41,12 @@
 
 ## 任务 Task
 
+### 调度器设置 Scheduler Setting
+
+Npos默认使用的是基于优先级的抢占调度机制，可以通过修改下列宏附加新的调度机制
+
+`\#define NPOS_TASK_TIMESLICE_SCHEDUL_EN 0` 1为启用同任务优先级的时间片轮转调度，0为不启用
+
 ### 任务运行时间 task runTime
 
 `#define NPOS_TASK_USAGERATE_EN 0` 1为启用任务运行时长的记录，0为不启用。单个任务的运行时间被保存在任务的tcb中

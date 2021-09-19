@@ -1,6 +1,6 @@
 <img src=".\readme_img\Npos图标.png" alt="Npos图标" style="zoom:75%;" />
 
-# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.7.1 (shields.io)](https://img.shields.io/badge/version-1.7.1-brightgreen)
+# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.7.3 (shields.io)](https://img.shields.io/badge/version-1.7.3-brightgreen)
 
 a simple Embedded Real-Time Operating System
 
@@ -99,12 +99,20 @@ int main(void)
 
 - [ ] 系统框架稳定性测试，测试gd的固件库能否在Npos上正常使用
 - [x] 增加优先级数量
-- [ ] 加入基于时间片调度的调度算法
+- [x] 加入基于时间片调度的调度算法
 - [ ] 加入一些零零散散的系统API
 - [ ] 添加各类组件
   - [ ] 文件系统
 
 ## ChangeLog
+
+### [1.7.3] - 2021-9-19 
+
+#### Added
+- 在原调度系统的基础上新增“同优先级基于时间片的轮转调度”功能
+#### Fixed
+- 修复任务拆离就绪列表时的分离残留导致的问题
+
 
 ### [1.7.0] - 2021-9-11
 
