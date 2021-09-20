@@ -1,6 +1,6 @@
 <img src=".\readme_img\Npos图标.png" alt="Npos图标" style="zoom:75%;" />
 
-# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.7.3 (shields.io)](https://img.shields.io/badge/version-1.7.3-brightgreen)
+# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.7.5 (shields.io)](https://img.shields.io/badge/version-1.7.5-brightgreen)
 
 a simple Embedded Real-Time Operating System
 
@@ -105,6 +105,13 @@ int main(void)
   - [ ] 文件系统
 
 ## ChangeLog
+
+### [1.7.5] 2021-9-20 15:23
+
+#### Fixed
+- 修复时间片轮转调度的bug,该bug导致同优先级的任务，如果是头结点被拆离链表后，无法正确找到后续任务继续执行
+#### Changed
+- 减少了需要分配给空闲任务的堆栈大小，从本来的至多1K降到了256Byte
 
 ### [1.7.3] - 2021-9-19 
 
