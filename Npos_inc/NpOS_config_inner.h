@@ -5,7 +5,7 @@
 /*           Task               */
 
 // 单个任务最小需要的堆栈大小
-#define NPOS_TASK_MIN_STACKSIZE     256
+#define NPOS_TASK_MIN_STACKSIZE     140
 
 //优先级列表使用的数据类型
 #define TASK_PRIORITY_TYPE  uint8_t

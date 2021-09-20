@@ -13,9 +13,9 @@ Np_TCB l_waitListRootNode;
 
 //空闲任务相关
 #if NPOS_TASK_USAGERATE_EN && NPOS_TASK_CPUUSAGE_RATE_EN
-#define idleTask_StackSize  1024
+#define idleTask_StackSize  256
 #else
-#define idleTask_StackSize  256+64
+#define idleTask_StackSize  140
 #endif
 TASK_STACK_TYPE idleTask_Stack[idleTask_StackSize];
 Np_TCB idleTask_Tcb;
@@ -590,6 +590,12 @@ void npos_sp_init(
                 void* stackbut,
                 uint32_t stacksize
                 ){
+                    
+    if(tcb->taskPriority == TASK_SYSTEMKEEP_LOWEST_PRIORITY){
+        memset(stackbut,0,sizeof(uint8_t)*stacksize);
+        tcb->pv_taskSp = (uint32_t)stackbut + stacksize;
+        return;
+    }
 
     memset(stackbut,0,sizeof(uint8_t)*stacksize);
     tcb->pv_taskSp = (uint32_t)stackbut + stacksize;

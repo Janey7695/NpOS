@@ -133,7 +133,6 @@ switch_to:
 
     lw sp,0(a0)
 
-    //addi sp,sp,-16
     la t6,irq_service_loop
     sw t6,12(sp)
 
@@ -143,11 +142,8 @@ switch_to:
 root_task_entry:
   csrw mscratch,a0
   
-  lw sp,0(a0)
-  addi sp,sp,16
+  lw ra,12(a0)
 
-  lw ra,120(sp)
-  addi sp,sp,-16
   ret
 
 
