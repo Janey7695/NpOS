@@ -1,11 +1,12 @@
 #include "../Npos_inc/NpOS.h"
-// #include "../Npos_cpu/systick.h"
 #include "string.h"
 #include "stdio.h"
 
-Np_tcblist g_TcbList;
-Np_TCB* gp_currentTcb;
-Np_TCB* lp_circleTcb;
+//全局变量
+Np_tcblist g_TcbList;  /*  全局的tcbList  */
+Np_TCB* gp_currentTcb;/*  指向当前正在生效的任务控制块 */
+
+//局部变量
 Np_TCB l_pendListRootNode;
 #if NPOS_OBJ_MESSAGE_EN
 Np_TCB l_waitListRootNode;
@@ -24,12 +25,13 @@ void idleTask(void);
 /*****函数声明******/
 void npos_task_lpendListInit();
 void npos_task_gTcbListInit();
+void npos_idletaskinit();
 void npos_sp_init(
                 Np_TCB* tcb,
                 void* stackbut,
                 uint32_t stacksize
                 );
-void npos_idletaskinit();
+
 task_funcsta npos_task_insertIntotaskReadyList(
                         Np_TCB* _tcb,
                         TASK_PRIORITY_TYPE _taskpri
@@ -38,23 +40,16 @@ Np_TCB* npos_task_deleteFromtaskReadyList(
                         Np_TCB* _tcb,
                         TASK_PRIORITY_TYPE _taskpri
                         );
-void NpOS_task_startSchedul();
+task_funcsta npos_insertIntoPendList();
+Np_TCB* npos_deleteFromPendList(Np_TCB* tcbnode);
 
 void npos_task_setTaskReadyFlag(Np_TCB* tcb);
 void npos_task_clearTaskReadyFlag(Np_TCB* tcb);
 
-task_funcsta npos_insertIntoPendList();
-Np_TCB* npos_deleteFromPendList(Np_TCB* tcbnode);
+void NpOS_task_startSchedul();
 void npos_taskpendTick_dec();
 void npos_get_highest_priority();
 /******************/
-
-
-//进入临界区
-#define NpOS_ENTER_CRITICAL()       eclic_global_interrupt_disable()
-
-//退出临界区
-#define NpOS_EXIT_CRITICAL()    eclic_global_interrupt_enable()
 
 
 const uint8_t c_taskPrioMask2Prio[256] = {
@@ -165,20 +160,21 @@ task_funcsta NpOS_task_createTask(
 */
 task_funcsta NpOS_task_deleteTask(Np_TCB* tcb){
     NpOS_ENTER_CRITICAL();
-    if(tcb == g_TcbList.taskReadyList[0].taskNode){
+    if(tcb == g_TcbList.taskReadyList[TASK_SYSTEMKEEP_LOWEST_PRIORITY].taskNode){
         LOG_ERR("system","Sorry you couldn't delete idle task");
         NpOS_EXIT_CRITICAL();
         return Exc_ERROR;
     }
     if(tcb->taskStatus == TASK_PEND){
+
         npos_deleteFromPendList(tcb);
     }
     else{
+        npos_task_clearTaskReadyFlag(tcb);
         npos_task_deleteFromtaskReadyList(tcb,tcb->taskPriority);
     }
     
     tcb->taskStatus = TASK_UNKNOWN;
-    npos_task_clearTaskReadyFlag(tcb);
     LOG_OK("system","task delete successfully");
     NpOS_EXIT_CRITICAL();
     NpOS_task_startSchedul();
@@ -194,7 +190,7 @@ task_funcsta NpOS_task_deleteTask(Np_TCB* tcb){
 */
 task_funcsta NpOS_task_pendTask(Np_TCB* tcb){
     NpOS_ENTER_CRITICAL();
-    if(tcb == g_TcbList.taskReadyList[0].taskNode){
+    if(tcb == g_TcbList.taskReadyList[TASK_SYSTEMKEEP_LOWEST_PRIORITY].taskNode){
         LOG_ERR("system","Sorry you couldn't pend idle task");
         NpOS_EXIT_CRITICAL();
         return Exc_ERROR;
@@ -208,13 +204,12 @@ task_funcsta NpOS_task_pendTask(Np_TCB* tcb){
 
     if(tcb->taskStatus == TASK_PEND){
         LOG_WARING("system","this task has been Pend statu");
-
         npos_deleteFromPendList(tcb);
     }
+    npos_task_clearTaskReadyFlag(tcb);
     npos_task_deleteFromtaskReadyList(tcb,tcb->taskPriority);
 
     tcb->taskStatus = TASK_PEND;
-    npos_task_clearTaskReadyFlag(tcb);
     LOG_OK("system","task pend successfully");
     NpOS_EXIT_CRITICAL();
     NpOS_task_startSchedul();
@@ -244,10 +239,11 @@ task_funcsta NpOS_task_readyTask(Np_TCB* tcb){
     if(tcb->taskStatus == TASK_PEND){
         npos_deleteFromPendList(tcb);
     }
+    npos_task_setTaskReadyFlag(tcb);
     npos_task_insertIntotaskReadyList(tcb,tcb->taskPriority);
     tcb->taskDelayTick = 0;
     tcb->taskStatus = TASK_READY;
-    npos_task_setTaskReadyFlag(tcb);
+
     LOG_OK("system","task is set to be ready");
     NpOS_EXIT_CRITICAL();
     NpOS_task_startSchedul();
@@ -308,7 +304,7 @@ void NpOS_task_schedul(){
     \retval none
 */
 void NpOS_Start(){
-    gp_currentTcb = g_TcbList.taskReadyList[0].taskNode;
+    gp_currentTcb = g_TcbList.taskReadyList[TASK_SYSTEMKEEP_LOWEST_PRIORITY].taskNode;
     System_tickInit();
     root_task_entry(gp_currentTcb);
 }
@@ -404,6 +400,7 @@ void npos_task_setTaskReadyFlag(Np_TCB* tcb){
 */
 void npos_task_clearTaskReadyFlag(Np_TCB* tcb){
 
+    if(tcb->p_lastTcb == tcb){
 #if NPOS_TASK_PRIORITY_NUMBER == NPOS_TASK_PRIORITY_NUMBER_8
     g_TcbList.taskReadyflag &= ~( 0x1 << (tcb->taskPriority));
 
@@ -424,6 +421,10 @@ void npos_task_clearTaskReadyFlag(Np_TCB* tcb){
     }
 
 #endif
+    }
+    else{
+        return;
+    }
 
 }
 
@@ -590,7 +591,7 @@ void npos_sp_init(
                 void* stackbut,
                 uint32_t stacksize
                 ){
-                    
+
     if(tcb->taskPriority == TASK_SYSTEMKEEP_LOWEST_PRIORITY){
         memset(stackbut,0,sizeof(uint8_t)*stacksize);
         tcb->pv_taskSp = (uint32_t)stackbut + stacksize;
@@ -633,7 +634,6 @@ void npos_get_highest_priority(){
 #if NPOS_TASK_PRIORITY_NUMBER == NPOS_TASK_PRIORITY_NUMBER_8
     l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyflag];
     lp_nexttcb = g_TcbList.taskReadyList[l_highestPri].taskNode;
-    // gp_currentTcb = lp_nexttcb;
 
 #elif NPOS_TASK_PRIORITY_NUMBER <= NPOS_TASK_PRIORITY_NUMBER_64 && NPOS_TASK_PRIORITY_NUMBER > NPOS_TASK_PRIORITY_NUMBER_8
     l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]*8+
@@ -641,19 +641,16 @@ void npos_get_highest_priority(){
 
     lp_nexttcb = g_TcbList.taskReadyList[l_highestPri].taskNode;
 
-    // gp_currentTcb = lp_nexttcb;
-
 #elif NPOS_TASK_PRIORITY_NUMBER>=NPOS_TASK_PRIORITY_NUMBER_128
     l_highestPri = c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]*64+
                     c_taskPrioMask2Prio[g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]]]*8+
                     c_taskPrioMask2Prio[g_TcbList.taskReadyflag3[c_taskPrioMask2Prio[g_TcbList.taskReadyflag2[c_taskPrioMask2Prio[g_TcbList.taskReadyflag1]]]]];
     lp_nexttcb = g_TcbList.taskReadyList[l_highestPri].taskNode;
-    // gp_currentTcb = lp_nexttcb;
 
 #endif
 
 #if NPOS_TASK_TIMESLICE_SCHEDUL_EN
-    if(g_TcbList.perTaskPriority == l_highestPri){
+    if(g_TcbList.perTaskPriority == l_highestPri && gp_currentTcb->taskStatus == TASK_READY){
         gp_currentTcb = gp_currentTcb->p_lastTcb;
     }
     else{
