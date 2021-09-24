@@ -7,17 +7,10 @@
 #if NPOS_OBJ_MESSAGE_EN
 #include "./NpOS_obj.h"
 #endif
-#include "gd32vf103.h"
-//进入临界区
-#define NpOS_ENTER_CRITICAL()       eclic_global_interrupt_disable()
-
-//退出临界区
-#define NpOS_EXIT_CRITICAL()    eclic_global_interrupt_enable()
-
 
 
 #define OS_NAME      "Not_Popular Real-Time Operate System"
-#define OS_VERSION    "1.7.6"
+#define OS_VERSION    "1.7.7"
 #define OS_RELEASED   "2021-8-25"
 #define OS_DESIGNED    "JaneyXu"
 

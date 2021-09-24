@@ -6,6 +6,10 @@
 Np_tcblist g_TcbList;  /*  全局的tcbList  */
 Np_TCB* gp_currentTcb;/*  指向当前正在生效的任务控制块 */
 
+#if NPOS_ENTER_CIRTICAL_BY == NPOS_ENTER_CIRTICAL_BY_DISABLESCH
+uint8_t g_schedulerSwitch;
+#endif // 
+
 //局部变量
 Np_TCB l_pendListRootNode;
 #if NPOS_OBJ_MESSAGE_EN
@@ -289,9 +293,17 @@ void NpOS_task_pendDelayTicks(uint32_t ticks){
     \retval none
 */
 void NpOS_task_schedul(){
+
+    #if NPOS_ENTER_CIRTICAL_BY == NPOS_ENTER_CIRTICAL_BY_DISABLESCH
+    if(g_schedulerSwitch == SchedulerOpen){
+    #endif 
     
     //获取下一个优先级最高的任务tcb
     npos_get_highest_priority();
+
+    #if NPOS_ENTER_CIRTICAL_BY == NPOS_ENTER_CIRTICAL_BY_DISABLESCH
+    }
+    #endif
 
     //恢复上下文
     switch_to(gp_currentTcb);
@@ -306,6 +318,9 @@ void NpOS_task_schedul(){
 void NpOS_Start(){
     gp_currentTcb = g_TcbList.taskReadyList[TASK_SYSTEMKEEP_LOWEST_PRIORITY].taskNode;
     System_tickInit();
+    #if NPOS_ENTER_CIRTICAL_BY == NPOS_ENTER_CIRTICAL_BY_DISABLESCH
+    g_schedulerSwitch = SchedulerOpen;
+    #endif
     root_task_entry(gp_currentTcb);
 }
 

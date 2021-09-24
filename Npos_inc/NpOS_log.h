@@ -2,7 +2,7 @@
 #define LOG_H
 
 #include "stdio.h"
-#include "../Npos_cpu/systick.h"
+#include "../Npos_cpu/cpu.h"
 #if NPOS_logInfoPrintf_EN
 #define pNONE                  "\e[0m"           //清除颜色，即之后的打印为正常输出，之前的不受影响
 #define pBLACK                 "\e[0;30m"         //深黑

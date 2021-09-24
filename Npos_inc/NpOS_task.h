@@ -88,6 +88,15 @@ extern void root_task_entry(Np_TCB* roottcb);
 
 extern Np_tcblist g_TcbList;
 extern Np_TCB* gp_currentTcb;
+#if NPOS_ENTER_CIRTICAL_BY == NPOS_ENTER_CIRTICAL_BY_DISABLESCH
+#define SchedulerClose 0
+#define SchedulerOpen 1
+extern uint8_t g_schedulerSwitch;
+//进入临界区
+#define NpOS_ENTER_CRITICAL()       g_schedulerSwitch = SchedulerClose
+//退出临界区
+#define NpOS_EXIT_CRITICAL()   g_schedulerSwitch = SchedulerOpen
+#endif // 
 
 void NpOS_task_tcblistInit();
 
