@@ -39,6 +39,22 @@
 
 启用后会向串口打印一些系统运行信息
 
+### 临界区进入方式 Enter Critical
+
+```c
+//进入临界区的方式
+#define NPOS_ENTER_CIRTICAL_BY_DISABLEIRQ   0   //通过关闭全局中断
+#define NPOS_ENTER_CIRTICAL_BY_DISABLESCH   1   //通过关闭调度器
+//设定进入临界区的方式
+#define NPOS_ENTER_CIRTICAL_BY NPOS_ENTER_CIRTICAL_BY_DISABLESCH
+```
+
+- NPOS_ENTER_CIRTICAL_BY_DISABLESCH 使用关调度器的方式来保护临界区
+- NPOS_ENTER_CIRTICAL_BY_DISABLEIRQ 使用关闭全局中断的方式来保护临界区
+
+> 当使用`NPOS_ENTER_CIRTICAL_BY_DISABLEIRQ`时，进入临界区后全局的中断都会被关闭。
+
+
 ## 任务 Task
 
 ### 调度器设置 Scheduler Setting

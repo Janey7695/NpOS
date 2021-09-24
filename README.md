@@ -1,6 +1,6 @@
 <img src=".\readme_img\Npos图标.png" alt="Npos图标" style="zoom:75%;" />
 
-# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.7.5 (shields.io)](https://img.shields.io/badge/version-1.7.5-brightgreen)
+# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.7.7 (shields.io)](https://img.shields.io/badge/version-1.7.7-brightgreen)
 
 a simple Embedded Real-Time Operating System
 
@@ -106,7 +106,14 @@ int main(void)
 
 ## ChangeLog
 
-### [1.7.5] 2021-9-20 15:23
+### [1.7.7] - 2021-9-24
+
+#### Added
+ - 添加新的临界区进入方式
+#### Changed
+ - 系统内核与硬件底层进一步解耦
+
+### [1.7.5] - 2021-9-20
 
 #### Fixed
 - 修复时间片轮转调度的bug,该bug导致同优先级的任务，如果是头结点被拆离链表后，无法正确找到后续任务继续执行
