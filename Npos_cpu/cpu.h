@@ -15,7 +15,8 @@
 
 #endif
 
-
+#define MSUBM_IR    (uint32_t)0x40
+#define MCAUSE_IR   (uint32_t)0xb8000007
 #define TIMER_WRITE_REG(offset)     *(uint32_t*)(TIMER_CTRL_ADDR+offset)
 
 extern uint32_t g_npos_systime_Ticks;

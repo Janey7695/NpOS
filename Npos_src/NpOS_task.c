@@ -621,12 +621,12 @@ void npos_sp_init(
     *(uint32_t*)(tcb->pv_taskSp + 108 ) = (uint32_t)tcb->pv_taskSp;
     
     //初始化 mcause 
-    *(uint32_t*)(tcb->pv_taskSp + 116 ) = (uint32_t)0xb8000007;
+    *(uint32_t*)(tcb->pv_taskSp + 116 ) = MCAUSE_IR;
     //初始化 mpec 和 ra
     *(uint32_t*)(tcb->pv_taskSp + 112 ) = (uint32_t)tcb->p_taskFunction;
     *(uint32_t*)(tcb->pv_taskSp + 120 ) = (uint32_t)tcb->p_taskFunction;
     //初始化 msubm
-    *(uint32_t*)(tcb->pv_taskSp + 124 ) = (uint32_t)0x40;
+    *(uint32_t*)(tcb->pv_taskSp + 124 ) = MSUBM_IR;
 
     //人为模拟堆栈在进入eclic_mtip_handler时 被自动申请的16个Byte
     tcb->pv_taskSp -= 16;
