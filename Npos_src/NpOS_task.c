@@ -468,7 +468,6 @@ void npos_task_gTcbListInit(){
     }
     g_TcbList.taskPendList = &l_pendListRootNode;
 #if NPOS_OBJ_MESSAGE_EN
-    Np_TCB l_waitListRootNode;
     g_TcbList.taskWaitList = &l_waitListRootNode;
 #endif
 

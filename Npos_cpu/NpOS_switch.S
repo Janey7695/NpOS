@@ -1,5 +1,4 @@
 
-// See LICENSE for license details
 
 #ifndef CONTEXTSWITCH_S
 #define CONTEXTSWITCH_S
@@ -18,7 +17,6 @@
 ###############################################
 ###############################################
 // IRQ entry point
-//
 
   .section      .text.entry
   .align 2     /* In ECLIC mode, the trap entry must be 64bytes aligned */

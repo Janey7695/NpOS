@@ -7,7 +7,7 @@
 #define NPOS_SchedulingInterval_MS  5
 
 //是否启用系统信息打印
-#define NPOS_logInfoPrintf_EN       1
+#define NPOS_logInfoPrintf_EN       0
 
 //进入临界区的方式
 #define NPOS_ENTER_CIRTICAL_BY_DISABLEIRQ   0   //通过关闭全局中断
@@ -18,11 +18,11 @@
 /*           Task               */
 
 // 是否启用任务运行时长统计
-#define NPOS_TASK_USAGERATE_EN 1
+#define NPOS_TASK_USAGERATE_EN 0
 // 是否启用idle任务来统计cpu的利用率
-#define NPOS_TASK_CPUUSAGE_RATE_EN 1
+#define NPOS_TASK_CPUUSAGE_RATE_EN 0
 // 是否启用同优先级时间片轮转调度
-#define NPOS_TASK_TIMESLICE_SCHEDUL_EN 1
+#define NPOS_TASK_TIMESLICE_SCHEDUL_EN 0
 
 // 允许的最多优先级数量
 #define NPOS_TASK_PRIORITY_NUMBER_8         8

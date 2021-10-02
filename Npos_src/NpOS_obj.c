@@ -69,10 +69,10 @@ task_funcsta NpOS_obj_receiveMsgFromTask(Np_MSG* msg,Np_TCB* sendertcb){
 
     while(msg->messageStatu == MESSAGE_EMPTY){
         LOG_WARING("System","waiting a message from another task");
+        npos_task_clearTaskReadyFlag(gp_currentTcb);
         gp_currentTcb->taskStatus = TASK_WAIT;
         npos_task_deleteFromtaskReadyList(gp_currentTcb,gp_currentTcb->taskPriority);
         npos_insertIntoWaitList(gp_currentTcb);
-        npos_task_clearTaskReadyFlag(gp_currentTcb);
         NpOS_EXIT_CRITICAL();
         NpOS_task_startSchedul();
     }

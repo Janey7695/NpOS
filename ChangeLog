@@ -82,3 +82,9 @@ Changed
 
 Changed
  - 为msubm和mcause添加掩码
+ 
+
+[1.7.9] - 2021-10-2
+
+Fixed
+- 修复[1.7.3]之后使用消息object会导致阻塞的bug

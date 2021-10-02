@@ -1,6 +1,6 @@
 <img src=".\readme_img\Npos图标.png" alt="Npos图标" style="zoom:75%;" />
 
-# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.7.7 (shields.io)](https://img.shields.io/badge/version-1.7.7-brightgreen)
+# NpOS ![license: GPLv3 (shields.io)](https://img.shields.io/badge/license-GPLv3-brightgreen)![version: 1.7.9 (shields.io)](https://img.shields.io/badge/version-1.7.9-brightgreen)
 
 a simple Embedded Real-Time Operating System
 
@@ -105,6 +105,11 @@ int main(void)
   - [ ] 文件系统
 
 ## ChangeLog
+
+### [1.7.9] - 2021-10-2
+
+#### Fixed
+- 修复[1.7.3]之后使用消息object会导致阻塞的bug
 
 ### [1.7.7] - 2021-9-24
 
