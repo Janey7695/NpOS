@@ -47,6 +47,7 @@ Np_TCB* npos_task_deleteFromtaskReadyList(
 task_funcsta npos_insertIntoPendList();
 Np_TCB* npos_deleteFromPendList(Np_TCB* tcbnode);
 
+task_funcsta npos_task_priorityCheck(Np_TCB* _tcb,TASK_PRIORITY_TYPE _taskpri);
 void npos_task_setTaskReadyFlag(Np_TCB* tcb);
 void npos_task_clearTaskReadyFlag(Np_TCB* tcb);
 
@@ -123,25 +124,8 @@ task_funcsta NpOS_task_createTask(
     
     tcb->p_nextTcb = NULL;
 
-    if(taskpri<NPOS_TASK_PRIORITY_NUMBER){
-        if(taskstatus == TASK_READY)
-            {
-                tcb->taskPriority = taskpri;
-
-                npos_task_setTaskReadyFlag(tcb);
-            }
-            else
-            {
-                tcb->taskPriority = taskpri;
-            }
-    }
-    else
-    {
-        LOG_ERR("system","your taskPriority is higher than the Highiest priority ");
-        return Exc_ERROR;
-    }
-
-
+    npos_task_priorityCheck(tcb,taskpri);
+    
     npos_sp_init(tcb,stackbut,stacksize);
 
     if(!npos_task_insertIntotaskReadyList(tcb,taskpri))
@@ -442,7 +426,31 @@ void npos_task_clearTaskReadyFlag(Np_TCB* tcb){
     }
 
 }
+task_funcsta npos_task_priorityCheck(Np_TCB* _tcb,TASK_PRIORITY_TYPE _taskpri){
+    if(_taskpri == TASK_SYSTEMKEEP_LOWEST_PRIORITY && g_TcbList.taskReadyList[TASK_SYSTEMKEEP_LOWEST_PRIORITY].taskNode == NULL){
+        _tcb->taskPriority = _taskpri;
+        npos_task_setTaskReadyFlag(_tcb);
+        return Exc_OK;
+    }
+    if(_taskpri<=TASK_USER_HIGHEST_PRIORITY && _taskpri >= TASK_USER_LOWEST_PRIORITY){
+        if(_tcb->taskStatus == TASK_READY)
+            {
+                _tcb->taskPriority = _taskpri;
 
+                npos_task_setTaskReadyFlag(_tcb);
+            }
+            else
+            {
+                _tcb->taskPriority = _taskpri;
+            }
+        return Exc_OK;
+    }
+    else
+    {
+        LOG_ERR("system","your taskPriority is a illegal priority ");
+        return Exc_ERROR;
+    }
+}
 /**
     \brief  pendlist的初始化
     \param[in]  none
@@ -468,6 +476,7 @@ void npos_task_gTcbListInit(){
     }
     g_TcbList.taskPendList = &l_pendListRootNode;
 #if NPOS_OBJ_MESSAGE_EN
+    Np_TCB l_waitListRootNode;
     g_TcbList.taskWaitList = &l_waitListRootNode;
 #endif
 

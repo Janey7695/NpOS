@@ -88,3 +88,8 @@ Changed
 
 Fixed
 - 修复[1.7.3]之后使用消息object会导致阻塞的bug
+
+[1.7.10] - 2021-10-4
+
+Change
+- create 函数修改
