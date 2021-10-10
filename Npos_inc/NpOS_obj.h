@@ -13,8 +13,6 @@ typedef struct msg
     Np_TCB* receiverTcb;
 }Np_MSG;
 
-task_funcsta NpOS_obj_createMsg(Np_MSG* msg);
-task_funcsta NpOS_obj_receiveMsgFromTask(Np_MSG* msg,Np_TCB* sendertcb);
-task_funcsta NpOS_obj_sendMsgtoTask(Np_MSG* msg,Np_TCB* receivertcb,void* p_msg);
+
 
 #endif // !NPOS_OBJ_H

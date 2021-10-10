@@ -24,7 +24,7 @@ void System_tickInit(){
     eclic_set_irq_priority(3, 0);
 
     //设置mtime的比较值
-    TIMER_WRITE_REG(TIMER_MTIMECMP) = 27000*NPOS_SchedulingInterval_MS;
+    TIMER_WRITE_REG(TIMER_MTIMECMP) = (uint32_t)NPOS_CountPerMS*NPOS_SchedulingInterval_MS;
     TIMER_WRITE_REG(TIMER_MTIMECMP+4) = 0x0;
     TIMER_WRITE_REG(TIMER_MTIME) = 0x0;
     TIMER_WRITE_REG(TIMER_MTIME+4) = 0x0;
@@ -38,6 +38,6 @@ uint32_t get_sys_ticks(){
 }
 
 uint32_t get_sys_runtime(){
-    return g_npos_systemRunTimeCount/27000;
+    return g_npos_systemRunTimeCount/NPOS_CountPerMS;
 }
 

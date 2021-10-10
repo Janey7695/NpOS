@@ -10,9 +10,29 @@
 
 
 #define OS_NAME      "Not_Popular Real-Time Operate System"
-#define OS_VERSION    "1.7.10"
+#define OS_VERSION    "1.7.11"
 #define OS_RELEASED   "2021-8-25"
 #define OS_DESIGNED    "JaneyXu"
+
+
+void NpOS_task_tcblistInit();
+void NpOS_Start();
+task_funcsta NpOS_task_createTask(
+                    Np_TCB* tcb,
+                    p_taskFunction taskfunc,
+                    TASK_PRIORITY_TYPE taskpri,
+                    void* stackbut,
+                    uint32_t stacksize,
+                    task_status taskstatus);
+task_funcsta NpOS_task_deleteTask(Np_TCB* tcb);
+task_funcsta NpOS_task_pendTask(Np_TCB* tcb);
+task_funcsta NpOS_task_readyTask(Np_TCB* tcb);
+void NpOS_task_pendDelayTicks(uint32_t ticks);
+
+
+task_funcsta NpOS_obj_createMsg(Np_MSG* msg);
+task_funcsta NpOS_obj_receiveMsgFromTask(Np_MSG* msg,Np_TCB* sendertcb);
+task_funcsta NpOS_obj_sendMsgtoTask(Np_MSG* msg,Np_TCB* receivertcb,void* p_msg);
 
 /*
 

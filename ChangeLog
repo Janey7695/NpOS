@@ -93,3 +93,8 @@ Fixed
 
 Change
 - create 函数修改
+
+[1.7.11] - 2021-10-10
+
+Change
+- 重写cpu利用率函数

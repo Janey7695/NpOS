@@ -84,7 +84,6 @@ const uint8_t c_taskPrioMask2Prio[256] = {
     \retval none
 */
 void NpOS_task_tcblistInit(){
-
     npos_task_gTcbListInit();
     npos_task_lpendListInit();
     npos_idletaskinit();
@@ -319,9 +318,9 @@ void eclic_mtip_handler(){
     context_save();
 
     g_npos_systime_Ticks += 1;
-    g_npos_systemRunTimeCount+=27000*NPOS_SchedulingInterval_MS;
+    g_npos_systemRunTimeCount+=NPOS_CountPerMS*NPOS_SchedulingInterval_MS;
 #if NPOS_TASK_USAGERATE_EN
-    gp_currentTcb->taskRunTimeCount+=27000*NPOS_SchedulingInterval_MS;
+    gp_currentTcb->taskRunTimeCount+=NPOS_CountPerMS*NPOS_SchedulingInterval_MS;
 #endif
     npos_taskpendTick_dec();
     
@@ -348,22 +347,38 @@ void eclic_msip_handler(){
     TIMER_WRITE_REG(TIMER_MSIP) = 0;
 }
 
+uint64_t npos_task_getTaskRuntimeCount(Np_TCB* tcb){
+    
+    return tcb->taskRunTimeCount;
+}
+
 /**
     \brief  系统空闲任务 避免系统无事可做
     \param[in]  none
     \retval none
 */
 void idleTask(){
-    #if NPOS_TASK_USAGERATE_EN
+    #if NPOS_TASK_USAGERATE_EN && NPOS_TASK_CPUUSAGE_RATE_EN
     float l_cpuUsageRate = 0.0;
+    uint64_t l_lastTimeReportUsageCount=0;
+    uint64_t l_lastTimeIdleTaskRunCount=0;
+    uint64_t l_timeIdleTaskRunCount=0;
     #endif
 
     while(1){
         
         #if NPOS_TASK_USAGERATE_EN && NPOS_TASK_CPUUSAGE_RATE_EN
-        LOG_INFO("idle task","idle task run ...");
-        l_cpuUsageRate = 100.0 - gp_currentTcb->taskRunTimeCount*100.0/g_npos_systemRunTimeCount;
-        printf("cpu usage rate is about : %.1f %% \n",l_cpuUsageRate);
+
+        l_timeIdleTaskRunCount = npos_task_getTaskRuntimeCount(&idleTask_Tcb) - l_lastTimeIdleTaskRunCount;
+
+        if(get_sys_runtime()-l_lastTimeReportUsageCount/NPOS_CountPerMS>= 1000){
+            l_cpuUsageRate = 100.0 - (int)l_timeIdleTaskRunCount*100.0/(1000*NPOS_CountPerMS);
+            printf("cpu usage rate is about : %.1f %% \n",l_cpuUsageRate);
+            l_lastTimeReportUsageCount = g_npos_systemRunTimeCount;
+            l_lastTimeIdleTaskRunCount = npos_task_getTaskRuntimeCount(&idleTask_Tcb);
+            l_timeIdleTaskRunCount=0;
+        }
+        
         #endif
         
     }
