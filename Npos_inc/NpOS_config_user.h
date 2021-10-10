@@ -13,7 +13,7 @@
 #define NPOS_ENTER_CIRTICAL_BY_DISABLEIRQ   0   //通过关闭全局中断
 #define NPOS_ENTER_CIRTICAL_BY_DISABLESCH   1   //通过关闭调度器
 //设定进入临界区的方式
-#define NPOS_ENTER_CIRTICAL_BY NPOS_ENTER_CIRTICAL_BY_DISABLESCH
+#define NPOS_ENTER_CIRTICAL_BY NPOS_ENTER_CIRTICAL_BY_DISABLEIRQ
 
 /*           Task               */
 
@@ -22,7 +22,7 @@
 // 是否启用idle任务来统计cpu的利用率
 #define NPOS_TASK_CPUUSAGE_RATE_EN 0
 // 是否启用同优先级时间片轮转调度
-#define NPOS_TASK_TIMESLICE_SCHEDUL_EN 0
+#define NPOS_TASK_TIMESLICE_SCHEDUL_EN 1
 
 // 允许的最多优先级数量
 #define NPOS_TASK_PRIORITY_NUMBER_8         8

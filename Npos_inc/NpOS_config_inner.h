@@ -1,5 +1,7 @@
 #ifndef NPOS_CONFIG_INNER_H
 #define NPOS_CONFIG_INNER_H
+
+#include "./NpOS_config_user.h"
 /*******************system config 非用户更改区********************/
 
 /*           Task               */
@@ -15,7 +17,12 @@
 
 //系统保留的最小优先级
 #define TASK_SYSTEMKEEP_LOWEST_PRIORITY     0
+
+//系统保留的最大优先级
+#define TASK_SYSTEMKEEP_HIGHEST_PRIORITY     NPOS_TASK_PRIORITY_NUMBER-1
+
 //可供用户使用的最小优先级
 #define TASK_USER_LOWEST_PRIORITY       TASK_SYSTEMKEEP_LOWEST_PRIORITY+1
-
+//可供用户使用的最高优先级
+#define TASK_USER_HIGHEST_PRIORITY       TASK_SYSTEMKEEP_HIGHEST_PRIORITY-1
 #endif // !NPOS_CONFIG_INNER_H
