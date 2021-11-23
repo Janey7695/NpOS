@@ -10,24 +10,14 @@
 uint32_t g_npos_systime_Ticks;
 uint64_t g_npos_systemRunTimeCount;
 void System_tickInit(){
-    
+   
+	/* 初始化系统心跳时钟，使之每 NPOS_CountPerMS*NPOS_SchedulingInterval_MS 发生一次中断*/
+	/* 系统心跳中断的优先级应该设为最低 */
 
-    //初始化mtime的中断
-    //设置系统心跳中断为最低优先级与等级
-    eclic_enable_interrupt(7);
-    eclic_set_irq_lvl_abs(7, 0);
-    eclic_set_irq_priority(7, 0);
+	/* write you timer init code here*/
 
-    //初始化msip中断
-    eclic_enable_interrupt(3);
-    eclic_set_irq_lvl_abs(3, 1);
-    eclic_set_irq_priority(3, 0);
 
-    //设置mtime的比较值
-    TIMER_WRITE_REG(TIMER_MTIMECMP) = (uint32_t)NPOS_CountPerMS*NPOS_SchedulingInterval_MS;
-    TIMER_WRITE_REG(TIMER_MTIMECMP+4) = 0x0;
-    TIMER_WRITE_REG(TIMER_MTIME) = 0x0;
-    TIMER_WRITE_REG(TIMER_MTIME+4) = 0x0;
+	/********/
 
     g_npos_systime_Ticks = 0;
     g_npos_systemRunTimeCount=0;
